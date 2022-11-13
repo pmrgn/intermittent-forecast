@@ -8,9 +8,9 @@ Clone the repo
 
 	git clone git@github.com:pmrgn/intermittent-forecast.git
 	
-Or download and install the package using `pip`
+Navigate to the package folder and install using `pip`
 
-	pip install intermittent-forecast
+	pip install .
 
 ### Croston's Method
 
