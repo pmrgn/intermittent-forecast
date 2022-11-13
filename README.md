@@ -24,6 +24,7 @@ Pass a time series of length N to the `croston`, which will return a forecast of
 - 'sbj' : Shale-Boylan-Johnston
 - 'tsb' : Teunter-Syntetos-Babai
 
+
 	ts = np.array([0,1,0,2,1])
 	forecast = croston(ts, method='sba', alpha=0.2, beta=0.1)
 	
@@ -32,6 +33,7 @@ Smoothing parameters (alpha, beta) can also be optimised by passing `opt=True` a
 - 'mse' : Mean Squared Error
 - 'msr' : Mean Squared Rate
 - 'pis' : Periods in Stock
+
 
 	forecast = croston(ts, method='tsb', opt=True, metric='msr')
 
