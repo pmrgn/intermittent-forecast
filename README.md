@@ -37,6 +37,27 @@ Smoothing parameters (alpha, beta) can also be optimised by passing `opt=True` a
 
 	forecast = croston(ts, method='tsb', opt=True, metric='msr')
 
+### ADIDA Class
 
+The Aggregate Disaggregate Intermittent Demand Approach (ADIDA) is available through the Adida class
 
+	from intermittent_forecast import Adida
 
+Create an instance of the class by passing a time series
+
+	ts = np.arange(20)
+	adida = Adida(ts)
+
+Aggregate the series into "buckets" by calling the `agg` method with either an overlapping or non-overlapping window.
+
+	adida.agg(size=4, overlapping=False)
+
+A single-point forecast can be calculated using the `predict` method and passing a forecasting function whose first parameter is the input time series. For example, using Croston's method within this package.
+
+	from intermittent_forecast import croston
+
+	adida.predict(croston, method='tsb', opt=True, metric='msr')
+
+The single-point forecast can then be disaggregated back to the original time scale by calling the `disagg` method, which will return a forecast array h-steps. To perform a seasonal disaggregation, pass a value for the cycle. 
+
+	forecast = adida.disagg(h=10, cycle=4)
