@@ -26,9 +26,12 @@ class Adida():
         overlapping : bool
             Overlapping or non-overlapping window
         """
-        self.size = size        
+        self.size = size
+        if size == 1:
+            self.aggregated = self.ts
+            return self
         if overlapping:
-            ts_agg = np.convolve(ts, np.ones(self.size), 'valid')  
+            ts_agg = np.convolve(self.ts, np.ones(self.size), 'valid')  
         else:
             trim = len(self.ts) % self.size
             ts_trim = self.ts[trim:]
@@ -48,25 +51,24 @@ class Adida():
         fn : function
             Forecasting function
         """
-        self.pred = fn(self.aggregated, *args, **kwargs)
-        if len(self.pred) > 1:
-            self.pred = self.pred[-1]
+        self.prediction = fn(self.aggregated, *args, **kwargs)
+        if len(self.prediction) > 1:
+            self.prediction = self.prediction[-1]
         return self
     
-    def disagg(self, prediction=None, h=1, cycle=None):
+    def disagg(self, h=1, cycle=None, prediction=None,):
         """
         Disaggregate a prediction back to the original time scale
 
         Parameters
         ----------
-        prediction : int, optional
-            Pass a single point prediction if the predict() method hasn't
-            been used to generate a forecast
         h : int
             Forecasting horizon, number of periods to forecast
         cycle : int, optional
             Number of periods in the seasonal cycle of the input time series. If not 
             defined, the disaggregation will be equal weighted
+        prediction : int, optional
+            Pass a single point prediction instead of using the predict method
 
         Returns
         -------
@@ -74,12 +76,12 @@ class Adida():
             1-D array of forecasted values of size (h,)
         """
         if prediction:
-            self.pred = prediction
+            self.prediction = prediction
         if cycle:
             trim = len(self.ts) % cycle
             s = self.ts[trim:].reshape(-1, cycle).sum(axis=0)
-            s_perc = [s.sum() and i/s.sum() for i in s]  # Short-circuit for zero division
-            pred = self.pred * (cycle/self.size)
+            s_perc = [s.sum() and i/s.sum() for i in s]
+            pred = self.prediction * (cycle/self.size)
             return np.resize([i * pred for i in s_perc],h)
         else:
-            return np.array([self.pred/self.size] * h) 
+            return np.array([self.prediction/self.size] * h) 
