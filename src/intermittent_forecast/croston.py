@@ -100,7 +100,6 @@ def croston(ts, method='cro', alpha=0.1, beta=0.1, opt=False, metric='mse'):
                            args=(ts, method, metric), 
                            bounds=[(0,1), (0,1)])
         alpha, beta = min_err.x
-        print(alpha, beta)
 
     # Perform smoothing on demand and interval arrays
     for i in range(1,n):

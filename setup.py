@@ -16,10 +16,10 @@ setup(
     author = 'Paul Morgan',
     author_email = '',
     url = '',
-    python_requires = '>=3.10',
+    python_requires = '>=3.8',
     install_requires = [
         'numpy>=1.20',
-        'scipy>=1.9',
+        'scipy>=1.6',
     ],
     license = license,
     packages = find_packages(where='src'),
