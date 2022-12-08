@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
-from .error_metrics import mae, mse, msr, pis
+from .error_metrics import mae, mse, msr, pis, mar
 
 
 def _error(params, ts, method, metric):
@@ -9,18 +9,18 @@ def _error(params, ts, method, metric):
     dispatcher = {
         'mae': mae,
         'mse': mse,
+        'mar': mar,
         'msr': msr,
         'pis': pis,
     }
     f = croston(ts, method=method, alpha=alpha, beta=beta,
                 opt=False, metric=dispatcher[metric])
-    if metric == 'msr':
+    if metric in ['msr', 'mar']:
         return dispatcher[metric](ts, f[:-1])
-    idx = np.argmax(np.isfinite(f))  # Index of first non-nan value
-    return dispatcher[metric](ts[idx:], f[idx:-1])
+    return dispatcher[metric](ts, f[:-1])
 
 
-def croston(ts, method='cro', alpha=0.1, beta=0.1, opt=False, metric='mse'):  
+def croston(ts, method='cro', alpha=None, beta=None, opt=True, metric='mar'):  
     """
     Perform smoothing on an intermittent time series, ts, and return
     a forecast array
@@ -48,6 +48,10 @@ def croston(ts, method='cro', alpha=0.1, beta=0.1, opt=False, metric='mse'):
     """
     if not isinstance(ts, np.ndarray):
         ts = np.array(ts)
+    if alpha:
+        opt = False
+        if not beta:
+            beta = alpha
     if method == 'tsb':
         # Initialise demand array, z, and demand probability, p. The starting
         # value for z is the first non-zero demand value, starting value for p
@@ -62,7 +66,7 @@ def croston(ts, method='cro', alpha=0.1, beta=0.1, opt=False, metric='mse'):
 
         # Optimise selection of alpha and beta if required
         if opt == True:
-            init = [0.1,0.1]  # Initial guess for alpha, beta
+            init = [0.05,0.05]  # Initial guess for alpha, beta
             min_err = minimize(_error, init, 
                                args=(ts, method, metric), 
                                bounds=[(0,1), (0,1)])
@@ -95,12 +99,12 @@ def croston(ts, method='cro', alpha=0.1, beta=0.1, opt=False, metric='mse'):
 
     # Optimise selection of alpha and beta if required
     if opt == True:
-        init = [0.1,0.1]  # Initial guess for alpha, beta
+        init = [0.05,0.05]  # Initial guess for alpha, beta
         min_err = minimize(_error, init, 
                            args=(ts, method, metric), 
                            bounds=[(0,1), (0,1)])
         alpha, beta = min_err.x
-
+        
     # Perform smoothing on demand and interval arrays
     for i in range(1,n):
         z[i] = alpha*nz[i] + (1-alpha)*z[i-1]

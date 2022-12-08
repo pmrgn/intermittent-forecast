@@ -27,24 +27,24 @@ class Adida():
             Overlapping or non-overlapping window
         """
         self.size = size
+        self.overlapping = overlapping
         if size == 1:
             self.aggregated = self.ts
             return self
-        if overlapping:
+        if self.overlapping:
             ts_agg = np.convolve(self.ts, np.ones(self.size), 'valid')  
         else:
             trim = len(self.ts) % self.size
             ts_trim = self.ts[trim:]
             ts_agg = ts_trim.reshape((-1, self.size)).sum(axis=1)
-        self.aggregated = np.trim_zeros(ts_agg, 'f')
+        self.aggregated = ts_agg
         return self
 
     def predict(self, fn=croston, *args, **kwargs):
         """
         Helper function, pass a forecasting function whose first parameter is
         the input time series. The aggregated time series will be passed to 
-        this function followed by any arguments. If the forecasting function returns 
-        an array, the final value will be used as the prediction.
+        this function followed by any arguments. 
                 
         Parameters
         ----------
@@ -52,8 +52,6 @@ class Adida():
             Forecasting function
         """
         self.prediction = fn(self.aggregated, *args, **kwargs)
-        if len(self.prediction) > 1:
-            self.prediction = self.prediction[-1]
         return self
     
     def disagg(self, h=1, cycle=None, prediction=None,):
@@ -73,15 +71,29 @@ class Adida():
         Returns
         -------
         forecast : ndarray
-            1-D array of forecasted values of size (h,)
+            1-D array of forecasted values
         """
-        if prediction:
-            self.prediction = prediction
-        if cycle:
-            trim = len(self.ts) % cycle
-            s = self.ts[trim:].reshape(-1, cycle).sum(axis=0)
-            s_perc = [s.sum() and i/s.sum() for i in s]
-            pred = self.prediction * (cycle/self.size)
-            return np.resize([i * pred for i in s_perc],h)
+        if not self.overlapping:
+            p = np.repeat(self.prediction[:-1], self.size)
+            offset = [np.nan] * (len(self.ts) % self.size)
+            p = np.concatenate(
+                (offset, p, self.prediction[-1:])
+            )
         else:
-            return np.array([self.prediction/self.size] * h) 
+            offset = [np.nan] * (self.size - 1)
+            p = np.concatenate((offset, self.prediction))
+
+        if cycle and cycle > 1:
+            n = len(self.ts)
+            trim = n % cycle
+            s = self.ts[trim:].reshape(-1, cycle).sum(axis=0)
+            frac = cycle / self.size
+            s_perc = [s.sum() and (i * frac)/s.sum() for i in s]
+            perc = s_perc * (n//cycle)  ## CHANGE TO VECTORISED MULTIPLICATION
+            perc = np.concatenate(([np.nan]*trim,perc))   #
+            f = np.array(s_perc) * p[-1]    # Out of sample forecast
+            p = p[:-1] * perc               # In-sample forecast
+        else:
+            p = p / self.size
+            p, f = p[:-1], p[-1]
+        return np.concatenate((p,np.resize(f,h)))
