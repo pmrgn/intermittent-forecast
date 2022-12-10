@@ -63,7 +63,7 @@ class TestAdida(unittest.TestCase):
         )
 
 
-    def test_disaggregation(self):
+    def test_disagg(self):
         # Aggregation size of 1 will produce the same forecast as using one of
         # the models in the croston function
         ts = np.random.randint(0,10,20)
@@ -91,18 +91,23 @@ class TestAdida(unittest.TestCase):
             np.testing.assert_array_equal(adida, exp)
         )
         
-        # Seasonal Disaggregation
-        ts = [1,2,3,4] * 4
+    def test_disagg_seasonal(self):
+        cycle = 7
+        n_rpt = 11
+        ts = np.tile(np.arange(cycle), n_rpt)
         adida = (
-            Adida(ts).agg(size=4, overlapping=False)
+            Adida(ts).agg(size=cycle, overlapping=False)
             .predict(croston, method='cro', alpha=1)
-            .disagg(h=4, cycle=4)
         )
-        exp = np.append([np.nan]*4,ts)
+        res = adida.disagg(h=cycle, cycle=cycle)
+        exp = np.append([np.nan]*cycle,ts)
         self.assertIsNone(
-            np.testing.assert_array_equal(adida, exp)
+            np.testing.assert_array_equal(res, exp)
         )
-        
+        res = adida.disagg(h=cycle, cycle=2*cycle)
+        self.assertIsNone(
+            np.testing.assert_array_equal(res, exp)
+        )
         
     #     f2 = adida.disagg(h=4, cycle=4)
     #     exp2 = [0,1,2,3]

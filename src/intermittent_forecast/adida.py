@@ -42,7 +42,7 @@ class Adida():
 
     def predict(self, fn=croston, *args, **kwargs):
         """
-        Helper function, pass a forecasting function whose first parameter is
+        Pass a forecasting function whose first parameter is
         the input time series. The aggregated time series will be passed to 
         this function followed by any arguments. 
                 
@@ -54,7 +54,7 @@ class Adida():
         self.prediction = fn(self.aggregated, *args, **kwargs)
         return self
     
-    def disagg(self, h=1, cycle=None, prediction=None,):
+    def disagg(self, h=1, cycle=None):
         """
         Disaggregate a prediction back to the original time scale
 
@@ -65,35 +65,35 @@ class Adida():
         cycle : int, optional
             Number of periods in the seasonal cycle of the input time series. If not 
             defined, the disaggregation will be equal weighted
-        prediction : int, optional
-            Pass a single point prediction instead of using the predict method
 
         Returns
         -------
         forecast : ndarray
             1-D array of forecasted values
         """
+        f_in = self.prediction[:-1]   # In-sample forecast
+        f_out = self.prediction[-1]   # Out of sample forecast
         if not self.overlapping:
-            p = np.repeat(self.prediction[:-1], self.size)
+            f_in = f_in.repeat(self.size)
             offset = [np.nan] * (len(self.ts) % self.size)
-            p = np.concatenate(
-                (offset, p, self.prediction[-1:])
-            )
+            f_in = np.concatenate((offset, f_in))
         else:
             offset = [np.nan] * (self.size - 1)
-            p = np.concatenate((offset, self.prediction))
-
+            f_in = np.concatenate((offset, f_in))
         if cycle and cycle > 1:
+            # Calculate the seasonal percentage for each step in the cycle 
             n = len(self.ts)
             trim = n % cycle
             s = self.ts[trim:].reshape(-1, cycle).sum(axis=0)
             frac = cycle / self.size
-            s_perc = [s.sum() and (i * frac)/s.sum() for i in s]
-            perc = s_perc * (n//cycle)  ## CHANGE TO VECTORISED MULTIPLICATION
-            perc = np.concatenate(([np.nan]*trim,perc))   #
-            f = np.array(s_perc) * p[-1]    # Out of sample forecast
-            p = p[:-1] * perc               # In-sample forecast
+            s_perc = np.array([s.sum() and (i * frac)/s.sum() for i in s]) 
+            # Apply seasonal percentage to f_in. First pad with nan to be able to
+            # reshape for a vectorised multiplication, then remove padding 
+            f_in = np.concatenate(([np.nan]*trim, f_in))
+            f_in = (f_in.reshape((-1,len(s_perc))) * s_perc).flatten()
+            f_in = f_in[trim:]
+            f_out = f_out * s_perc
         else:
-            p = p / self.size
-            p, f = p[:-1], p[-1]
-        return np.concatenate((p,np.resize(f,h)))
+            f_in /= self.size
+            f_out /= self.size
+        return np.concatenate((f_in,np.resize(f_out,h)))
