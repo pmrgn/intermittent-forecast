@@ -1,12 +1,16 @@
 import numpy as np
 from intermittent_forecast import Imapa, croston, error_metrics, Adida
 
-ts = [1,2,3,4] * 4
+ts = np.arange(1,21)
 adida = (
-    Adida(ts).agg(size=4, overlapping=False)
-    .predict(croston, method='cro', alpha=1)
-    .disagg(h=4, cycle=4)
+    Adida(ts).agg(size=1, overlapping=False)
+    .predict(method='cro', alpha=1)
+    .disagg(h=1)
 )
 print(adida)
-exp = np.append([np.nan]*4,ts)
-print(exp)
+
+imapa = Imapa(ts).agg(sizes=[1,2,3,4,5])
+for agg in imapa.aggs:
+    print(agg.aggregated)
+imapa = imapa.predict(method='cro', alpha=1).disagg(h=1, combine='median')
+print(imapa)

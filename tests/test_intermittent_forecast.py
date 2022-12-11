@@ -109,30 +109,46 @@ class TestAdida(unittest.TestCase):
             np.testing.assert_array_equal(res, exp)
         )
         
-    #     f2 = adida.disagg(h=4, cycle=4)
-    #     exp2 = [0,1,2,3]
-    #     self.assertIsNone(np.testing.assert_array_equal(f2,exp2))
+class TestImapa(unittest.TestCase):
 
-    #     # Pass a prediction value straight to the disagg method
-    #     f3 = (
-    #         Adida(ts).agg(size=4, overlapping=False)
-    #         .disagg(prediction=5, h=4, cycle=4)
-    #     )
-    #     exp3 = np.array([0,1,2,3]) * 5/6
-    #     self.assertIsNone(np.testing.assert_allclose(f3,exp3))
+    def test_imapa(self):
+        ts = np.zeros(10)
+        ts[-1] = 3
+        n_rpt = 5
+        sizes = np.arange(1,len(ts)+1)
+        sizes = sizes[len(ts) % sizes == 0]
+        res = (
+            Imapa(np.tile(ts,n_rpt))
+            .agg(sizes)
+            .predict(method='cro', alpha=1)
+            .disagg(combine='mean', h=len(ts))
+        )
+        exp = np.concatenate(
+            (np.repeat(np.nan, len(ts)),
+            np.repeat(np.mean(ts),len(ts)*n_rpt)
+            )
+        )
+        self.assertIsNone(
+            np.testing.assert_array_equal(res, exp)
+        )
 
-
-# class TestImapa(unittest.TestCase):
-
-#     def test_agg(self):
-#         ts = [0,0,0,10,0,0,0,2,0,0,0,3]
-#         sizes = [1,2]
-#         imapa = Imapa(ts).agg(sizes)
-#         for agg in imapa.aggregated:
-#             print(agg)
-#         f = imapa.predict(combine='mean')
-#         print(f)
-                
+        # Median combination
+        ts = np.arange(1,21)
+        sizes = np.arange(1,6)
+        res = (
+            Imapa(ts)
+            .agg(sizes=sizes)
+            .predict(method='cro', alpha=1)
+            .disagg(h=1, combine='median')
+        )
+        exp = np.concatenate(
+            ([np.nan]*5,
+             [3.5,4,4,7,7,8,9.5,10.5,10.5,13,13,14.5,15.5,16,16,19]
+             )
+        )
+        self.assertIsNone(
+            np.testing.assert_array_equal(res, exp)
+        )
 if __name__ == '__main__':
     unittest.main()
                              

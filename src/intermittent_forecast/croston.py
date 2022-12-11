@@ -19,6 +19,18 @@ def _error(params, ts, method, metric):
         return dispatcher[metric](ts, f[:-1])
     return dispatcher[metric](ts, f[:-1])
 
+def _auto_sel(ts):
+    """
+    Select the forecasting method using squared covariance of non-zero
+    demand and mean demand interval
+    """
+    ts_nz = ts[ts != 0]
+    p_mean = len(ts) / len(ts_nz)
+    cv2 = (np.std(ts_nz, ddof=1) / np.mean(ts_nz))**2
+    if cv2 <= 0.49 and p_mean <= 1.34:
+        return 'cro'
+    else:
+        return 'sba'
 
 def croston(ts, method='cro', alpha=None, beta=None, opt=True, metric='mar'):  
     """
@@ -29,9 +41,11 @@ def croston(ts, method='cro', alpha=None, beta=None, opt=True, metric='mar'):
     ----------
     ts : (N,) array_like
         1-D input time series
-    method : {'cro', 'sba', 'sbj', 'tsb'}
+    method : {'cro', 'sba', 'sbj', 'tsb', 'auto'}
         Forecasting method: Croston, Syntetos-Boylan Approximation,
-        Shale-Boylan-Johnston, Teunter-Syntetos-Babai
+        Shale-Boylan-Johnston, Teunter-Syntetos-Babai. If 'auto', either
+        Croston's method or SBA will be chosen based on CV^2 and mean
+        demand interval.
     alpha : float
         Demand smoothing factor, `0 < alpha < 1`
     beta : float
@@ -52,6 +66,8 @@ def croston(ts, method='cro', alpha=None, beta=None, opt=True, metric='mar'):
         opt = False
         if not beta:
             beta = alpha
+    if method == 'auto':
+        method = _auto_sel(ts)
     if method == 'tsb':
         # Initialise demand array, z, and demand probability, p. The starting
         # value for z is the first non-zero demand value, starting value for p
