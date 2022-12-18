@@ -1,22 +1,23 @@
 import numpy as np
 from .croston import croston
 
-class Adida():
+
+class Adida:
     
     def __init__(self, ts):
         """
-        Initialise Adida class
+        Initialise ADIDA class
         
         Parameters
         ----------
         ts : array_like
-            1-D list or array
+            Input time series, 1-D list or array
         """
         self.ts = np.array(ts)
     
     def agg(self, size=1, overlapping=False):
         """
-        Aggregate self.ts into "buckets", with an overlapping
+        Aggregate time series into "buckets", with an overlapping
         or non-overlapping window
 
         Parameters
@@ -28,7 +29,7 @@ class Adida():
         """
         self.size = size
         self.overlapping = overlapping
-        if size == 1:
+        if self.size == 1:
             self.aggregated = self.ts
             return self
         if self.overlapping:
@@ -42,14 +43,13 @@ class Adida():
 
     def predict(self, fn=croston, *args, **kwargs):
         """
-        Pass a forecasting function whose first parameter is
-        the input time series. The aggregated time series will be passed to 
-        this function followed by any arguments. 
+        Create a forecast using the aggregated time series
                 
         Parameters
         ----------
         fn : function
-            Forecasting function
+            Forecasting function, first parameter must be the input time series.
+            Default is Croston's method.
         """
         self.prediction = fn(self.aggregated, *args, **kwargs)
         return self
