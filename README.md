@@ -48,16 +48,32 @@ Create an instance of the class by passing a time series
 	ts = np.arange(20)
 	adida = Adida(ts)
 
-Aggregate the series into "buckets" by calling the `agg` method with either an overlapping or non-overlapping window.
+Aggregate the series into "buckets" by calling the `agg` method with the aggregation size and either an overlapping or non-overlapping window.
 
 	adida.agg(size=4, overlapping=False)
 
-A single-point forecast can be calculated using the `predict` method and passing a forecasting function whose first parameter is the input time series. For example, using Croston's method within this package.
+A forecast can be calculated using the `predict` method and passing a forecasting function whose first parameter is the input time series. For example, using Croston's method within this package.
 
 	from intermittent_forecast import croston
 
-	adida.predict(croston, method='tsb', opt=True, metric='msr')
+	adida.predict(croston, method='sba', opt=True, metric='msr')
 
-The single-point forecast can then be disaggregated back to the original time scale by calling the `disagg` method, which will return a forecast array h-steps. To perform a seasonal disaggregation, pass a value for the cycle. 
+The forecast can then be disaggregated back to the original time scale by calling the `disagg` method, which will return the forecast array h-steps into the future. To perform a seasonal disaggregation, pass a value for the seasonal cycle. 
 
 	forecast = adida.disagg(h=10, cycle=4)
+
+### IMAPA Class
+
+The Multiple Aggregation Prediction Algorithm (MAPA) approach is found in the `Imapa` class. It will create multiple instances of the Adida class and combine the end results, using either the mean or median. All parameters in the Adida class methods can be passed to the Imapa methods. Repeating the example from the Adida class but with multiple aggregation sizes.
+
+    from intermittent_forecast import Imapa, croston
+
+    ts = np.arange(20)
+    sizes = np.arange(1,5)
+
+    imapa = (
+        Imapa(ts)
+        .agg(sizes, overlapping=False)
+        .predict(croston, method='sba', opt=True, metric='msr')
+        .disagg(combine='mean', h=10, cycle=4)
+    )
