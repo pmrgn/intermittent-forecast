@@ -1,4 +1,4 @@
 from .croston import croston
-from .adida import Adida
-from .imapa import Imapa
+from .adida import adida
+from .imapa import imapa
 from . import error_metrics

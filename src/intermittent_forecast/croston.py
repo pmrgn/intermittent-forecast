@@ -52,7 +52,7 @@ def croston(ts, method='cro', alpha=None, beta=None, opt=True, metric='mar'):
         Interval smoothing factor, `0 < beta < 1`
     opt : boolean
         Optimise smoothing factors
-    metric : {'mae', 'mse', 'msr', 'pis'}
+    metric : {'mar', 'mae', 'mse', 'msr', 'pis'}
         Error metric to be used for optimisation of smoothing factors
         
     Returns
@@ -62,6 +62,10 @@ def croston(ts, method='cro', alpha=None, beta=None, opt=True, metric='mar'):
     """
     if not isinstance(ts, np.ndarray):
         ts = np.array(ts)
+    if len(ts[ts != 0]) < 2:
+        raise ValueError('Time series needs at least two non-zero values')
+    if alpha is None and opt == False:
+        raise ValueError('Require a value for alpha, or set opt=True')
     if alpha:
         opt = False
         if not beta:
@@ -115,14 +119,14 @@ def croston(ts, method='cro', alpha=None, beta=None, opt=True, metric='mar'):
 
     # Optimise selection of alpha and beta if required
     if opt == True:
-        init = [0.05,0.05]  # Initial guess for alpha, beta
+        init = [0.05, 0.05]  # Initial guess for alpha, beta
         min_err = minimize(_error, init, 
                            args=(ts, method, metric), 
                            bounds=[(0,1), (0,1)])
         alpha, beta = min_err.x
         
     # Perform smoothing on demand and interval arrays
-    for i in range(1,n):
+    for i in range(1, n):
         z[i] = alpha*nz[i] + (1-alpha)*z[i-1]
         p[i] = beta*p_diff[i] + (1-beta)*p[i-1]
     
