@@ -64,7 +64,7 @@ def adida(ts, size=1, overlapping=False, method='auto', opt=True,
         Forecasting horizon, number of periods to forecast
     cycle : int, optional
         For a seasonal disaggregation, enter the number of periods in the 
-        seasonal cycle of the input time series. If not If not defined, the 
+        seasonal cycle of the input time series. If not defined, the 
         disaggregation will be equal weighted.
 
     Returns

@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
-from .error_metrics import mae, mse, msr, pis, mar
+from ._error_metrics import mae, mse, msr, pis, mar
 
 
 def _error(params, ts, method, metric):

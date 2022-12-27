@@ -1,5 +1,5 @@
 import unittest
-from intermittent_forecast import error_metrics, croston, adida, imapa
+from intermittent_forecast import _error_metrics, croston, adida, imapa
 from intermittent_forecast.adida import (_aggregate, _apply_cycle_perc, 
                                          _seasonal_cycle)
 import numpy as np
@@ -11,11 +11,11 @@ class TestErrorMetrics(unittest.TestCase):
     def test_error_metrics(self):
         ts =  np.arange(6)
         f = np.insert(np.ones(5), 0, np.nan)
-        self.assertAlmostEqual(error_metrics.mae(ts, f), 2)
-        self.assertAlmostEqual(error_metrics.mse(ts, f), 6)
-        self.assertAlmostEqual(error_metrics.msr(ts, f), 0.75)
-        self.assertAlmostEqual(error_metrics.mar(ts, f), 0.7)
-        self.assertAlmostEqual(error_metrics.pis(ts, f), 20)
+        self.assertAlmostEqual(_error_metrics.mae(ts, f), 2)
+        self.assertAlmostEqual(_error_metrics.mse(ts, f), 6)
+        self.assertAlmostEqual(_error_metrics.msr(ts, f), 0.75)
+        self.assertAlmostEqual(_error_metrics.mar(ts, f), 0.7)
+        self.assertAlmostEqual(_error_metrics.pis(ts, f), 20)
 
 
 class TestCroston(unittest.TestCase):
