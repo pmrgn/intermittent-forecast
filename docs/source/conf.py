@@ -15,7 +15,7 @@ release = '0.0.2'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = ['sphinx.ext.napoleon']
-
+autodoc_mock_imports = ['numpy', 'scipy']
 templates_path = ['_templates']
 exclude_patterns = []
 add_module_names = False
