@@ -6,6 +6,8 @@
 intermittent-forecast
 =====================
 
+Tools for forecasting intermittent time series.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -13,10 +15,3 @@ intermittent-forecast
    intro
    intermittent_forecast
    examples
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
