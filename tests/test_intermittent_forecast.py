@@ -1,9 +1,10 @@
 import unittest
-from intermittent_forecast import _error_metrics, croston, adida, imapa
-from intermittent_forecast.adida import (_aggregate, _apply_cycle_perc, 
-                                         _seasonal_cycle)
+
 import numpy as np
-from numpy.testing import assert_array_equal, assert_allclose
+from numpy.testing import assert_allclose, assert_array_equal
+
+from intermittent_forecast import adida, croston, error_metrics, imapa
+from intermittent_forecast.adida import _aggregate, _apply_cycle_perc, _seasonal_cycle
 
 
 class TestErrorMetrics(unittest.TestCase):
@@ -11,11 +12,11 @@ class TestErrorMetrics(unittest.TestCase):
     def test_error_metrics(self):
         ts =  np.arange(6)
         f = np.insert(np.ones(5), 0, np.nan)
-        self.assertAlmostEqual(_error_metrics.mae(ts, f), 2)
-        self.assertAlmostEqual(_error_metrics.mse(ts, f), 6)
-        self.assertAlmostEqual(_error_metrics.msr(ts, f), 0.75)
-        self.assertAlmostEqual(_error_metrics.mar(ts, f), 0.7)
-        self.assertAlmostEqual(_error_metrics.pis(ts, f), 20)
+        self.assertAlmostEqual(error_metrics.mae(ts, f), 2)
+        self.assertAlmostEqual(error_metrics.mse(ts, f), 6)
+        self.assertAlmostEqual(error_metrics.msr(ts, f), 0.75)
+        self.assertAlmostEqual(error_metrics.mar(ts, f), 0.7)
+        self.assertAlmostEqual(error_metrics.pis(ts, f), 20)
 
 
 class TestCroston(unittest.TestCase):
@@ -31,7 +32,7 @@ class TestCroston(unittest.TestCase):
             'tsb': np.array([np.nan, 0.5, 0.7, 0.42, 0.978])
         }
         for k, v in expected.items():
-            f = croston(ts, method=k, alpha=a, beta=b, opt=False)
+            f = croston.croston(ts, method=k, alpha=a, beta=b, opt=False)
             self.assertIsNone(assert_allclose(v,f))
 
 
@@ -69,24 +70,24 @@ class TestAdida(unittest.TestCase):
 
     def test_adida(self):
         ts = np.arange(1,11)
-        f = adida(ts, size=1, overlapping=False, method='cro',
+        f = adida.adida(ts, size=1, overlapping=False, method='cro',
                   alpha=1, h=1)
         expected = np.insert(ts.astype('float'), 0, [np.nan])
         self.assertIsNone(assert_array_equal(f, expected))
 
-        f = adida(ts, size=2, overlapping=False, method='cro',
+        f = adida.adida(ts, size=2, overlapping=False, method='cro',
                   alpha=1, h=2)
         expected = np.array([np.nan, 1.5, 3.5, 5.5, 7.5, 9.5]).repeat(2)
         self.assertIsNone(assert_array_equal(f, expected))
         
-        f = adida(ts, size=2, overlapping=True, method='cro',
+        f = adida.adida(ts, size=2, overlapping=True, method='cro',
                   alpha=1, h=1)
         expected = np.concatenate(([np.nan, np.nan], np.arange(1.5, 10.5, 1)))
         self.assertIsNone(assert_array_equal(f, expected))
 
         # Test for seasonal cycles
         ts = np.tile(np.arange(7), 5)
-        f = adida(ts, size=7, overlapping=False, method='sba',
+        f = adida.adida(ts, size=7, overlapping=False, method='sba',
                   alpha=1, h=7, cycle=7)
         expected = np.insert(ts/2, 0, [np.nan]*7)
         self.assertIsNone(assert_array_equal(f, expected))
@@ -99,19 +100,19 @@ class TestImapa(unittest.TestCase):
         
         # IMAPA at single aggregation size should equal ADIDA
         for i in range(1,5):
-            f = imapa(ts, sizes=[i])
-            expected = adida(ts, size=i)
+            f = imapa.imapa(ts, sizes=[i])
+            expected =  adida.adida(ts, size=i)
             self.assertIsNone(assert_allclose(f, expected))
         
         # Test mean combination
-        f = imapa(ts, sizes=[1,2,3], overlapping=False, method='cro',
+        f = imapa.imapa(ts, sizes=[1,2,3], overlapping=False, method='cro',
                   alpha=1, h=1, combine='mean')
         expected = (1/3) * np.array([np.nan, np.nan, np.nan, 6.5, 9.5, 10.5,
                              16.5, 17.5, 20.5, 24.5, 27.5, 28.5, 34.5])
         self.assertIsNone(assert_array_equal(f, expected))
 
         # Test median combination
-        f = imapa(ts, sizes=[1,2,3], overlapping=False, method='sba',
+        f = imapa.imapa(ts, sizes=[1,2,3], overlapping=False, method='sba',
                   alpha=1, h=1, combine='median')
         expected = np.array([np.nan, np.nan, np.nan, 1, 1.75, 1.75,
                              2.75, 2.75, 3.75, 4, 4.75, 4.75, 5.75])

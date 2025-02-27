@@ -1,5 +1,6 @@
 import numpy as np
-from .adida import adida
+
+from intermittent_forecast.adida import adida
 
 
 def imapa(ts, sizes=[1], combine='mean', overlapping=False, method='auto',
