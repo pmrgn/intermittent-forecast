@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
-from ._error_metrics import mae, mse, msr, pis, mar
+
+from intermittent_forecast.error_metrics import mae, mar, mse, msr, pis
 
 
 def _error(params, ts, method, metric):

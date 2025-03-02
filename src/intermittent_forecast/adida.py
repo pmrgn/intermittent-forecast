@@ -1,5 +1,6 @@
 import numpy as np
-from .croston import croston
+
+from intermittent_forecast.croston import croston
 
 
 def _aggregate(ts, size, overlapping):
