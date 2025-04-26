@@ -36,8 +36,48 @@ class ADIDA:
         self._model = model
         self._base_ts = model.ts
         self._aggregation_period = aggregation_period
-        self._aggregation_mode = aggregation_mode
-        self._disaggregation_mode = disaggregation_mode
+        self.set_aggregation_mode(aggregation_mode)
+        self.set_disaggregation_mode(disaggregation_mode)
+
+    def set_aggregation_mode(self, mode: AggregationMode | str) -> None:
+        """Set the aggregation mode."""
+        if isinstance(mode, str):
+            mode = self._get_aggregation_mode_from_str(mode)
+        if not isinstance(mode, AggregationMode):
+            err_msg = f"Invalid aggregation mode: {mode}"
+            raise TypeError(err_msg)
+        self._aggregation_mode = mode
+
+    def set_disaggregation_mode(self, mode: DisaggregationMode | str) -> None:
+        """Set the disaggregation mode."""
+        if isinstance(mode, str):
+            mode = self._get_disaggregation_mode_from_str(mode)
+        if not isinstance(mode, DisaggregationMode):
+            err_msg = f"Invalid disaggregation mode: {mode}"
+            raise TypeError(err_msg)
+        self._disaggregation_mode = mode
+
+    @staticmethod
+    def _get_aggregation_mode_from_str(mode_str: str) -> AggregationMode:
+        try:
+            return AggregationMode(mode_str.lower())
+        except ValueError:
+            err_msg = (
+                f"Unknown aggregation mode: '{mode_str}'. ",
+                f"Expected one of: {[m.value for m in AggregationMode]}",
+            )
+            raise ValueError(err_msg) from None
+
+    @staticmethod
+    def _get_disaggregation_mode_from_str(mode_str: str) -> DisaggregationMode:
+        try:
+            return DisaggregationMode(mode_str.lower())
+        except ValueError:
+            err_msg = (
+                f"Unknown disaggregation mode: '{mode_str}'.",
+                f"Expected one of: {[m.value for m in DisaggregationMode]}",
+            )
+            raise ValueError(err_msg) from None
 
     def forecast(self) -> npt.NDArray[np.float64]:
         """Forecast the time series using the ADIDA method.
@@ -69,12 +109,12 @@ class ADIDA:
             Aggregation mode, by default AggregationMode.BLOCK.value.
 
         """
-        if self._aggregation_mode == AggregationMode.SLIDING.value:
+        if self._aggregation_mode == AggregationMode.SLIDING:
             _aggregated_ts = TimeSeriesResampler.sliding_aggregation(
                 ts=self._model.ts,
                 window_size=self._aggregation_period,
             )
-        elif self._aggregation_mode == AggregationMode.BLOCK.value:
+        elif self._aggregation_mode == AggregationMode.BLOCK:
             _aggregated_ts = TimeSeriesResampler.block_aggregation(
                 ts=self._model.ts,
                 window_size=self._aggregation_period,
@@ -107,19 +147,19 @@ class ADIDA:
 
         """
         # disaggregate based on the mode of aggregation
-        if self._aggregation_mode == AggregationMode.SLIDING.value:
+        if self._aggregation_mode == AggregationMode.SLIDING:
             forecast = TimeSeriesResampler.sliding_disaggregation(
                 ts=self._aggregated_forecast,
                 window_size=self._aggregation_period,
             )
 
-        elif self._aggregation_mode == AggregationMode.BLOCK.value:
+        elif self._aggregation_mode == AggregationMode.BLOCK:
             forecast = TimeSeriesResampler.block_disaggregation(
                 ts=self._aggregated_forecast,
                 window_size=self._aggregation_period,
             )
 
-        if self._disaggregation_mode == DisaggregationMode.SEASONAL.value:
+        if self._disaggregation_mode == DisaggregationMode.SEASONAL:
             # Compute the temporal weights of the original time-series
             temporal_weights = TimeSeriesResampler.calculate_temporal_weights(
                 ts=self._base_ts,
@@ -131,7 +171,7 @@ class ADIDA:
                 temporal_weights=temporal_weights,
             )
 
-        elif self._disaggregation_mode == DisaggregationMode.UNIFORM.value:
+        elif self._disaggregation_mode == DisaggregationMode.UNIFORM:
             # Implement uniform disaggregation logic here
             ret = TimeSeriesResampler.block_disaggregation(
                 ts=self._aggregated_forecast,
