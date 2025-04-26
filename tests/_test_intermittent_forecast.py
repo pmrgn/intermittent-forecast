@@ -42,8 +42,8 @@ class TestAdida(unittest.TestCase):
             assert_allclose(s, [0, 0.5, 0.5]),
         )
 
-    def test_apply_cycle_perc(self):
-        f = _apply_cycle_perc(np.ones(5), [0, 0.3, 0.7])
+    def test_apply_temporal_weights(self):
+        f = _apply_temporal_weights(np.ones(5), [0, 0.3, 0.7])
         self.assertIsNone(
             assert_allclose(f, [0.3, 0.7, 0, 0.3, 0.7]),
         )

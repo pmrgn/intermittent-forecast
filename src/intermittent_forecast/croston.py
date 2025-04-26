@@ -53,10 +53,13 @@ class CrostonVariant(BaseForecaster):
             name="beta",
         )
 
-    def forecast(self) -> npt.NDArray[np.float64]:
+    def _generate_forecast(
+        self,
+        ts: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]:
         """Forecast the time series using Croston's method."""
         return self._forecast(
-            ts=self.ts,
+            ts=ts,
             alpha=self.alpha,
             beta=self.beta,
         )
@@ -81,12 +84,12 @@ class CrostonVariant(BaseForecaster):
         """Cost function used for optimisation of alpha and beta."""
         alpha, beta = params
         f = self._forecast(
-            ts=self.ts,
+            ts=self._ts,
             alpha=alpha,
             beta=beta,
         )
 
-        return metric_function(self.ts, f[:-1])
+        return metric_function(self._ts, f[:-1])
 
     def _get_bias_correction_value(self) -> float:
         """Apply bias correction to forecast when required.
