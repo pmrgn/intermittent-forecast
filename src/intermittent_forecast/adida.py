@@ -1,5 +1,7 @@
 """Methods for forecasting intermittent time series using ADIDA method."""
 
+from copy import deepcopy
+
 import numpy as np
 import numpy.typing as npt
 
@@ -34,7 +36,7 @@ class ADIDA:
                 "Not a recognised forecasting model.",
             )
         self._model = model
-        self._base_ts = model.ts
+        self._aggregated_model = deepcopy(model)
         self._aggregation_period = aggregation_period
         self.set_aggregation_mode(aggregation_mode)
         self.set_disaggregation_mode(disaggregation_mode)
@@ -79,6 +81,10 @@ class ADIDA:
             )
             raise ValueError(err_msg) from None
 
+    def fit(self) -> None:
+        """Fit the model."""
+        self._aggregated_model.fit()
+
     def forecast(self) -> npt.NDArray[np.float64]:
         """Forecast the time series using the ADIDA method.
 
@@ -89,10 +95,9 @@ class ADIDA:
 
         """
         # Aggregate the time series
-        self._aggregated_ts = self._aggregate()
-        self._aggregated_forecast = self._model.forecast(
-            timeseries_overide=self._aggregated_ts,
-        )
+        self._aggregated_model.ts = self._aggregate()
+
+        self._aggregated_forecast = self._aggregated_model.forecast()
         result = self._disaggregate()
         return result
 
@@ -162,7 +167,7 @@ class ADIDA:
         if self._disaggregation_mode == DisaggregationMode.SEASONAL:
             # Compute the temporal weights of the original time-series
             temporal_weights = TimeSeriesResampler.calculate_temporal_weights(
-                ts=self._base_ts,
+                ts=self._model.ts,
                 cycle=self._aggregation_period,
             )
             # Apply the temporal weights to the forecast

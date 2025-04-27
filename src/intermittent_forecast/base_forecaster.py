@@ -41,20 +41,15 @@ class BaseForecaster(ABC):
         """Set the time-series."""
         self._ts = self._validate_time_series(ts)
 
-    def forecast(
-        self,
-        timeseries_overide: None | npt.NDArray[np.float64] = None,
-    ) -> npt.NDArray[np.float64]:
-        """Returns the forecast."""
-        ts = timeseries_overide if timeseries_overide is not None else self._ts
-        return self._generate_forecast(ts)
+    @abstractmethod
+    def fit(self) -> None:
+        """Fit the model to the time-series."""
 
     @abstractmethod
-    def _generate_forecast(
+    def forecast(
         self,
-        ts: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
-        """Logic to generate the forecast."""
+        """Returns the forecast."""
 
     def _validate_time_series(
         self,
