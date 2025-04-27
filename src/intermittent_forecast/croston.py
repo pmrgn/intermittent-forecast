@@ -53,18 +53,15 @@ class CrostonVariant(BaseForecaster):
             name="beta",
         )
 
-    def _generate_forecast(
-        self,
-        ts: npt.NDArray[np.float64],
-    ) -> npt.NDArray[np.float64]:
+    def forecast(self) -> npt.NDArray[np.float64]:
         """Forecast the time series using Croston's method."""
         return self._forecast(
-            ts=ts,
+            ts=self.ts,
             alpha=self.alpha,
             beta=self.beta,
         )
 
-    def optimise_parameters(self, metric: str) -> None:
+    def fit(self, metric: str) -> None:
         """Optimise the smoothing parameters alpha and beta."""
         _metric = get_metric_function(metric)
         initial_guess = self.alpha, self.beta  # Initial guess for alpha, beta
