@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 import numpy.typing as npt
 
+AllowedForecastParmams = float | int | None
+
 
 class BaseForecaster(ABC):
     """Base class for forecasting models."""
@@ -50,8 +52,6 @@ class BaseForecaster(ABC):
     @abstractmethod
     def forecast(
         self,
-        alpha: float | None = None,
-        beta: float | None = None,
     ) -> npt.NDArray[np.float64]:
         """Returns the forecast."""
 
@@ -87,3 +87,24 @@ class BaseForecaster(ABC):
             raise ValueError(err_msg)
 
         return ts
+
+    @staticmethod
+    def _validate_float_within_inclusive_bounds(
+        name: str,
+        value: float,
+        min_value: float = float("-inf"),
+        max_value: float = float("inf"),
+    ) -> float:
+        """Validate a numeric parameter is within inclusive bounds."""
+        if value is None:
+            err_msg = (
+                f"Parameter '{name}' must be provided and cannot be None.",
+            )
+            raise ValueError(err_msg)
+        if not (min_value <= value <= max_value):
+            err_msg = (
+                f"Parameter '{name}'={value} is out of bounds. ",
+                f"Must be between {min_value} and {max_value}.",
+            )
+            raise ValueError(err_msg)
+        return value
