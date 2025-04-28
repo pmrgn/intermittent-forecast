@@ -34,7 +34,7 @@ def test_single_value_series() -> None:
 
 def test_croston_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the CRO class."""
-    forecast = CRO(basic_time_series, alpha=0.5, beta=0.2).forecast()
+    forecast = CRO(basic_time_series).forecast(alpha=0.5, beta=0.2)
     expected = np.array(
         [
             np.nan,
@@ -59,7 +59,7 @@ def test_croston_forecast(basic_time_series: list[float]) -> None:
 
 def test_sba_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the SBA class."""
-    forecast = SBA(basic_time_series, alpha=0.5, beta=0.2).forecast()
+    forecast = SBA(basic_time_series).forecast(alpha=0.5, beta=0.2)
     expected = np.array(
         [
             np.nan,
@@ -84,7 +84,7 @@ def test_sba_forecast(basic_time_series: list[float]) -> None:
 
 def test_sbj_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the SBJ class."""
-    forecast = SBJ(basic_time_series, alpha=0.5, beta=0.2).forecast()
+    forecast = SBJ(basic_time_series).forecast(alpha=0.5, beta=0.2)
     expected = np.array(
         [
             np.nan,
@@ -109,7 +109,7 @@ def test_sbj_forecast(basic_time_series: list[float]) -> None:
 
 def test_tsb_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the TSB class."""
-    forecast = TSB(basic_time_series, alpha=0.3, beta=0.1).forecast()
+    forecast = TSB(basic_time_series).forecast(alpha=0.3, beta=0.1)
     expected = np.array(
         [
             np.nan,
@@ -135,7 +135,7 @@ def test_tsb_forecast(basic_time_series: list[float]) -> None:
 def test_croston_fit() -> None:
     """Test that the fit method calculates the correct parameter values."""
     ts = [1, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 4, 0, 5, 6]
-    croston = CRO(ts, alpha=1, beta=1)
+    croston = CRO(ts)
     croston.fit()
     expected_alpha = 1
     expected_beta = 1

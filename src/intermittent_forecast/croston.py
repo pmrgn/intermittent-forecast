@@ -39,39 +39,32 @@ class CrostonVariant(BaseForecaster):
     def __init__(
         self,
         ts: list[float] | npt.NDArray[np.float64],
-        alpha: float = 0.1,
-        beta: float = 0.1,
     ) -> None:
         """Initialise the Croston variant."""
         super().__init__(ts)
         # TODO: Remove parameters from constructor.
-        self.alpha = self._validate_smoothing_parameter(
-            value=alpha,
-            name="alpha",
-        )
-        self.beta = self._validate_smoothing_parameter(
-            value=beta,
-            name="beta",
-        )
-
-    def forecast(self) -> npt.NDArray[np.float64]:
-        """Forecast the time series using Croston's method."""
-        # TODO: Allow parameters here, instead of being passed in the constructor.
-        return self._forecast(
-            ts=self.ts,
-            alpha=self.alpha,
-            beta=self.beta,
-        )
 
     def fit(self, metric: str = "MSE") -> None:
         """Optimise the smoothing parameters alpha and beta."""
         _metric = get_metric_function(metric)
-        initial_guess = self.alpha, self.beta  # Initial guess for alpha, beta
+
+        # Set the bounds for alpha and beta.
+        alpha_min = 0
+        alpha_max = 1
+        beta_min = 0
+        beta_max = 1
+
+        # Set the initial guess to the midpoint of the bounds for alpha and
+        # beta.
+        initial_guess = (
+            (alpha_max - alpha_min) / 2,
+            (beta_max - beta_min) / 2,
+        )  # Initial guess for alpha, beta
         min_err = optimize.minimize(
             self._cost_function,
             initial_guess,
             args=(_metric,),
-            bounds=[(0, 1), (0, 1)],
+            bounds=[(alpha_min, alpha_max), (beta_min, beta_max)],
         )
         print(min_err.x)
         self.alpha, self.beta = min_err.x
@@ -83,8 +76,7 @@ class CrostonVariant(BaseForecaster):
     ) -> float:
         """Cost function used for optimisation of alpha and beta."""
         alpha, beta = params
-        f = self._forecast(
-            ts=self._ts,
+        f = self.forecast(
             alpha=alpha,
             beta=beta,
         )
@@ -92,7 +84,8 @@ class CrostonVariant(BaseForecaster):
         print(f"Alpha: {alpha}, Beta: {beta}, Error: {error}")
         return error
 
-    def _get_bias_correction_value(self) -> float:
+    @staticmethod
+    def _get_bias_correction_value(beta: float) -> float:
         """Apply bias correction to forecast when required.
 
         Croston adaptations such as SBA and SBJ require bias correction, which
@@ -100,15 +93,22 @@ class CrostonVariant(BaseForecaster):
         """
         return 1
 
-    def _forecast(
+    def forecast(
         self,
-        ts: npt.NDArray[np.float64],
-        alpha: float,
-        beta: float,
+        alpha: float | None = None,
+        beta: float | None = None,
     ) -> npt.NDArray[np.float64]:
         """Perform forecasting for CRO, SBA, and SBJ methods."""
-        non_zero_demand = self._get_nonzero_demand_array(ts)
-        p_idx = self._get_nonzero_demand_indices(ts)
+        alpha = self._validate_smoothing_parameter(
+            value=alpha or self.alpha,
+            name="alpha",
+        )
+        beta = self._validate_smoothing_parameter(
+            value=beta or self.alpha,
+            name="beta",
+        )
+        non_zero_demand = self._get_nonzero_demand_array(self.ts)
+        p_idx = self._get_nonzero_demand_indices(self.ts)
         p_diff = self._get_nonzero_demand_intervals(p_idx)
 
         # Intialise an array for the demand.
@@ -133,10 +133,10 @@ class CrostonVariant(BaseForecaster):
 
         # Apply bias correction if required, e.g., for SBA and SBJ methods. For
         # CRO, the bias correction is 1, so it does not affect the forecast.
-        f *= self._get_bias_correction_value()
+        f *= self._get_bias_correction_value(beta)
 
         # Initialize forecast array
-        forecast = np.zeros(len(ts))
+        forecast = np.zeros(len(self.ts))
         forecast[p_idx] = f
 
         # Forward fill non-zero forecasted demand values
@@ -221,40 +221,47 @@ class SBA(CrostonVariant):
     def __init__(
         self,
         ts: list[float] | npt.NDArray[np.float64],
-        alpha: float = 0.1,
-        beta: float = 0.05,
     ) -> None:
         """Initialise the SBA variant of Croston's method."""
-        super().__init__(ts, alpha, beta)
+        super().__init__(ts)
 
-    def _get_bias_correction_value(self) -> float:
+    @staticmethod
+    def _get_bias_correction_value(beta: float) -> float:
         """Bias correction applicable to the SBA method."""
-        return 1 - (self.beta / 2)
+        return 1 - (beta / 2)
 
 
 class SBJ(CrostonVariant):
     """SBJ variant of Croston's method."""
 
-    def _get_bias_correction_value(self) -> float:
+    @staticmethod
+    def _get_bias_correction_value(beta: float) -> float:
         """Bias correction applicable to the SBJ method."""
-        return 1 - (self.beta / (2 - self.beta))
+        return 1 - (beta / (2 - beta))
 
 
 class TSB(CrostonVariant):
     """TSB variant of Croston's method."""
 
-    def _forecast(
+    def forecast(
         self,
-        ts: npt.NDArray[np.float64],
-        alpha: float,
-        beta: float,
+        alpha: float | None = None,
+        beta: float | None = None,
     ) -> npt.NDArray[np.float64]:
         """Perform forecasting using TSB method."""
-        n = len(ts)
-        p_idx = self._get_nonzero_demand_indices(ts)
+        alpha = self._validate_smoothing_parameter(
+            value=alpha or self.alpha,
+            name="alpha",
+        )
+        beta = self._validate_smoothing_parameter(
+            value=beta or self.alpha,
+            name="beta",
+        )
+        n = len(self.ts)
+        p_idx = self._get_nonzero_demand_indices(self.ts)
         z = self._initialise_array(
             array_length=n,
-            initial_value=ts[p_idx[0]],
+            initial_value=self.ts[p_idx[0]],
         )
 
         p = self._initialise_array(
@@ -264,8 +271,8 @@ class TSB(CrostonVariant):
 
         # Update rules are dependent on whether there is a non-zero demand.
         for i in range(1, n):
-            if ts[i] > 0:
-                z[i] = alpha * ts[i] + (1 - alpha) * z[i - 1]
+            if self.ts[i] > 0:
+                z[i] = alpha * self.ts[i] + (1 - alpha) * z[i - 1]
                 p[i] = beta + (1 - beta) * p[i - 1]
             else:
                 z[i] = z[i - 1]

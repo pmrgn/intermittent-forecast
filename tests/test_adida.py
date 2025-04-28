@@ -17,7 +17,7 @@ def intermittent_time_series() -> npt.NDArray[np.float64]:
 @pytest.fixture
 def croston_model(intermittent_time_series: npt.NDArray[np.float64]) -> CRO:
     """Fixture for the CRO model."""
-    return CRO(intermittent_time_series, alpha=1, beta=1)
+    return CRO(intermittent_time_series)
 
 
 @pytest.mark.parametrize(
@@ -40,7 +40,7 @@ def test_adida_forecast_croston_block_uniform(
         aggregation_mode="block",
         disaggregation_mode="uniform",
     )
-    result = adida_model.forecast()
+    result = adida_model.forecast(alpha=1, beta=1)
     np.testing.assert_allclose(
         result,
         np.array(expected),
@@ -82,7 +82,7 @@ def test_adida_forecast_croston_block_seasonal(
         aggregation_mode="block",
         disaggregation_mode="seasonal",
     )
-    result = adida_model.forecast()
+    result = adida_model.forecast(alpha=1, beta=1)
     np.testing.assert_allclose(
         result,
         np.array(expected),
