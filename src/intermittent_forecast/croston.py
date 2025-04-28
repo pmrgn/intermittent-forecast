@@ -36,13 +36,14 @@ def get_metric_function(metric_name: str) -> Callable[..., float]:
 class CrostonVariant(BaseForecaster):
     """Base class for Croston variants."""
 
+    requires_bias_correction = False
+
     def __init__(
         self,
         ts: list[float] | npt.NDArray[np.float64],
     ) -> None:
         """Initialise the Croston variant."""
         super().__init__(ts)
-        # TODO: Remove parameters from constructor.
 
     def fit(self, metric: str = "MSE") -> None:
         """Optimise the smoothing parameters alpha and beta."""
@@ -54,19 +55,18 @@ class CrostonVariant(BaseForecaster):
         beta_min = 0
         beta_max = 1
 
-        # Set the initial guess to the midpoint of the bounds for alpha and
+        # Set the initial guess as the midpoint of the bounds for alpha and
         # beta.
         initial_guess = (
             (alpha_max - alpha_min) / 2,
             (beta_max - beta_min) / 2,
-        )  # Initial guess for alpha, beta
+        )
         min_err = optimize.minimize(
             self._cost_function,
             initial_guess,
             args=(_metric,),
             bounds=[(alpha_min, alpha_max), (beta_min, beta_max)],
         )
-        print(min_err.x)
         self.alpha, self.beta = min_err.x
 
     def _cost_function(
@@ -81,17 +81,18 @@ class CrostonVariant(BaseForecaster):
             beta=beta,
         )
         error = metric_function(self._ts, f[:-1])
-        print(f"Alpha: {alpha}, Beta: {beta}, Error: {error}")
         return error
 
-    @staticmethod
-    def _get_bias_correction_value(beta: float) -> float:
-        """Apply bias correction to forecast when required.
-
-        Croston adaptations such as SBA and SBJ require bias correction, which
-        is a value multiplied with the forecast.
-        """
-        return 1
+    def _get_bias_correction_value(self, beta: float) -> float:  # noqa: ARG002
+        """Return the bias correction value, if applicable."""
+        if not self.requires_bias_correction:
+            err_msg = "Bias correction is not applicable for this method."
+            raise RuntimeError(err_msg)
+        err_msg = (
+            "Bias correction is not implemented for this method. "
+            "Please implement the '_get_bias_correction_value' method."
+        )
+        raise NotImplementedError(err_msg)
 
     def forecast(
         self,
@@ -99,14 +100,29 @@ class CrostonVariant(BaseForecaster):
         beta: float | None = None,
     ) -> npt.NDArray[np.float64]:
         """Perform forecasting for CRO, SBA, and SBJ methods."""
-        alpha = self._validate_smoothing_parameter(
-            value=alpha or self.alpha,
+        alpha = alpha or self.alpha
+        beta = beta or self.beta
+        if alpha is None or beta is None:
+            err_msg = (
+                "Alpha and beta must be set before calling forecast, or call"
+                "the fit() method automatically select values."
+            )
+            raise ValueError(err_msg)
+
+        alpha = self._validate_float_within_inclusive_bounds(
             name="alpha",
+            value=alpha,
+            min_value=0,
+            max_value=1,
         )
-        beta = self._validate_smoothing_parameter(
-            value=beta or self.alpha,
+
+        beta = self._validate_float_within_inclusive_bounds(
             name="beta",
+            value=beta,
+            min_value=0,
+            max_value=1,
         )
+
         non_zero_demand = self._get_nonzero_demand_array(self.ts)
         p_idx = self._get_nonzero_demand_indices(self.ts)
         p_diff = self._get_nonzero_demand_intervals(p_idx)
@@ -133,7 +149,8 @@ class CrostonVariant(BaseForecaster):
 
         # Apply bias correction if required, e.g., for SBA and SBJ methods. For
         # CRO, the bias correction is 1, so it does not affect the forecast.
-        f *= self._get_bias_correction_value(beta)
+        if self.requires_bias_correction:
+            f *= self._get_bias_correction_value(beta)
 
         # Initialize forecast array
         forecast = np.zeros(len(self.ts))
@@ -188,28 +205,6 @@ class CrostonVariant(BaseForecaster):
         np.maximum.accumulate(idx, out=idx)
         return valid[idx]
 
-    @staticmethod
-    def _validate_smoothing_parameter(
-        value: float,
-        name: str,
-    ) -> float:
-        """Validate the smoothing parameter."""
-        if not isinstance(value, (float, int)):
-            err_msg = (
-                f"Invalid value set for parameter: `{name}`. Must be type"
-                f" int or float, instead got type: `{type(value)}`"
-            )
-            raise TypeError(err_msg)
-
-        if not 0 <= value <= 1:
-            err_msg = (
-                f"Invalid value set for parameter: `{name}`. Must be in"
-                f" the range (0, 1). Instead got value: `{value}`"
-            )
-            raise ValueError(err_msg)
-
-        return value
-
 
 class CRO(CrostonVariant):
     """Croston's method."""
@@ -218,6 +213,8 @@ class CRO(CrostonVariant):
 class SBA(CrostonVariant):
     """SBA variant of Croston's method."""
 
+    requires_bias_correction = True
+
     def __init__(
         self,
         ts: list[float] | npt.NDArray[np.float64],
@@ -225,8 +222,7 @@ class SBA(CrostonVariant):
         """Initialise the SBA variant of Croston's method."""
         super().__init__(ts)
 
-    @staticmethod
-    def _get_bias_correction_value(beta: float) -> float:
+    def _get_bias_correction_value(self, beta: float) -> float:
         """Bias correction applicable to the SBA method."""
         return 1 - (beta / 2)
 
@@ -234,8 +230,9 @@ class SBA(CrostonVariant):
 class SBJ(CrostonVariant):
     """SBJ variant of Croston's method."""
 
-    @staticmethod
-    def _get_bias_correction_value(beta: float) -> float:
+    requires_bias_correction = True
+
+    def _get_bias_correction_value(self, beta: float) -> float:
         """Bias correction applicable to the SBJ method."""
         return 1 - (beta / (2 - beta))
 
@@ -249,13 +246,27 @@ class TSB(CrostonVariant):
         beta: float | None = None,
     ) -> npt.NDArray[np.float64]:
         """Perform forecasting using TSB method."""
-        alpha = self._validate_smoothing_parameter(
-            value=alpha or self.alpha,
+        alpha = alpha or self.alpha
+        beta = beta or self.beta
+        if alpha is None or beta is None:
+            err_msg = (
+                "Alpha and beta must be set before calling forecast, or call"
+                "the fit() method automatically select values."
+            )
+            raise ValueError(err_msg)
+
+        alpha = self._validate_float_within_inclusive_bounds(
             name="alpha",
+            value=alpha,
+            min_value=0,
+            max_value=1,
         )
-        beta = self._validate_smoothing_parameter(
-            value=beta or self.alpha,
+
+        beta = self._validate_float_within_inclusive_bounds(
             name="beta",
+            value=beta,
+            min_value=0,
+            max_value=1,
         )
         n = len(self.ts)
         p_idx = self._get_nonzero_demand_indices(self.ts)

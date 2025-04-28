@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -89,8 +90,7 @@ class ADIDA:
 
     def forecast(
         self,
-        alpha: float | None = None,
-        beta: float | None = None,
+        **kwargs: Any,  # noqa: ANN401
     ) -> npt.NDArray[np.float64]:
         """Forecast the time series using the ADIDA method.
 
@@ -104,11 +104,9 @@ class ADIDA:
         self._aggregated_model.ts = self._aggregate()
 
         self._aggregated_forecast = self._aggregated_model.forecast(
-            alpha=self._aggregated_model.alpha or alpha,
-            beta=self._aggregated_model.beta or beta,
+            **kwargs,
         )
-        result = self._disaggregate()
-        return result
+        return self._disaggregate()
 
     def _aggregate(
         self,
@@ -136,10 +134,11 @@ class ADIDA:
 
         else:
             # TODO: May not need this if validated in the class init.
-            raise ValueError(
-                f"Unknown aggregation mode: {self._aggregation_mode}. "
-                f"Valid options are: {[m.value for m in AggregationMode]}.",
+            err_msg = (
+                f"Unknown aggregation mode: {self._aggregation_mode}.",
+                f"Valid options are: {[m.value for m in AggregationMode]}",
             )
+            raise ValueError(err_msg)
 
         return _aggregated_ts
 
