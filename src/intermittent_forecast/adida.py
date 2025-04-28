@@ -1,5 +1,7 @@
 """Methods for forecasting intermittent time series using ADIDA method."""
 
+from __future__ import annotations
+
 from copy import deepcopy
 
 import numpy as np
@@ -85,7 +87,11 @@ class ADIDA:
         """Fit the model."""
         self._aggregated_model.fit()
 
-    def forecast(self) -> npt.NDArray[np.float64]:
+    def forecast(
+        self,
+        alpha: float | None = None,
+        beta: float | None = None,
+    ) -> npt.NDArray[np.float64]:
         """Forecast the time series using the ADIDA method.
 
         Returns
@@ -97,7 +103,10 @@ class ADIDA:
         # Aggregate the time series
         self._aggregated_model.ts = self._aggregate()
 
-        self._aggregated_forecast = self._aggregated_model.forecast()
+        self._aggregated_forecast = self._aggregated_model.forecast(
+            alpha=self._aggregated_model.alpha or alpha,
+            beta=self._aggregated_model.beta or beta,
+        )
         result = self._disaggregate()
         return result
 

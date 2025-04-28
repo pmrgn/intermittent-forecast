@@ -30,6 +30,8 @@ class BaseForecaster(ABC):
 
         """
         self._ts = self._validate_time_series(ts)
+        self.alpha = None
+        self.beta = None
 
     @property
     def ts(self) -> npt.NDArray[np.float64]:
@@ -48,6 +50,8 @@ class BaseForecaster(ABC):
     @abstractmethod
     def forecast(
         self,
+        alpha: float | None = None,
+        beta: float | None = None,
     ) -> npt.NDArray[np.float64]:
         """Returns the forecast."""
 
