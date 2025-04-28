@@ -130,3 +130,20 @@ def test_tsb_forecast(basic_time_series: list[float]) -> None:
         expected,
         rtol=1e-5,
     )
+
+
+def test_croston_fit() -> None:
+    """Test that the fit method calculates the correct parameter values."""
+    ts = [1, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 4, 0, 5, 6]
+    croston = CRO(ts, alpha=1, beta=1)
+    croston.fit()
+    expected_alpha = 1
+    expected_beta = 1
+    if croston.alpha != expected_alpha:
+        error_message = (
+            f"Expected alpha: {expected_alpha}, got: {croston.alpha}"
+        )
+        raise AssertionError(error_message)
+    if croston.beta != expected_beta:
+        error_message = f"Expected beta: {expected_beta}, got: {croston.beta}"
+        raise AssertionError(error_message)

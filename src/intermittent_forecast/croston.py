@@ -44,6 +44,7 @@ class CrostonVariant(BaseForecaster):
     ) -> None:
         """Initialise the Croston variant."""
         super().__init__(ts)
+        # TODO: Remove parameters from constructor.
         self.alpha = self._validate_smoothing_parameter(
             value=alpha,
             name="alpha",
@@ -55,13 +56,14 @@ class CrostonVariant(BaseForecaster):
 
     def forecast(self) -> npt.NDArray[np.float64]:
         """Forecast the time series using Croston's method."""
+        # TODO: Allow parameters here, instead of being passed in the constructor.
         return self._forecast(
             ts=self.ts,
             alpha=self.alpha,
             beta=self.beta,
         )
 
-    def fit(self, metric: str) -> None:
+    def fit(self, metric: str = "MSE") -> None:
         """Optimise the smoothing parameters alpha and beta."""
         _metric = get_metric_function(metric)
         initial_guess = self.alpha, self.beta  # Initial guess for alpha, beta
@@ -71,6 +73,7 @@ class CrostonVariant(BaseForecaster):
             args=(_metric,),
             bounds=[(0, 1), (0, 1)],
         )
+        print(min_err.x)
         self.alpha, self.beta = min_err.x
 
     def _cost_function(
@@ -85,8 +88,9 @@ class CrostonVariant(BaseForecaster):
             alpha=alpha,
             beta=beta,
         )
-
-        return metric_function(self._ts, f[:-1])
+        error = metric_function(self._ts, f[:-1])
+        print(f"Alpha: {alpha}, Beta: {beta}, Error: {error}")
+        return error
 
     def _get_bias_correction_value(self) -> float:
         """Apply bias correction to forecast when required.
@@ -271,11 +275,3 @@ class TSB(CrostonVariant):
 
         # Offset the forecast to match the original time series.
         return np.insert(forecast, 0, np.nan)
-
-
-if __name__ == "__main__":
-    ts = [0, 3, 0, 4, 0, 0, 0, 2, 0]
-    ts = [0, 0, 1, 0, 6, 0, 2, 5, 0, 0, 0]
-    croston = CRO(ts, alpha=0.5, beta=0.4)
-    f = croston.forecast()
-    print(f)
