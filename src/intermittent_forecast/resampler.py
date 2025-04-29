@@ -77,7 +77,6 @@ class TimeSeriesResampler:
         averages = sums / counts
 
         dist = averages / averages.sum()
-        print("Seasonal distribution: ", dist)
         return dist
 
     @staticmethod
