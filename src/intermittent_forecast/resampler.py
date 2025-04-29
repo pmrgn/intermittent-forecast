@@ -32,14 +32,6 @@ class TimeSeriesResampler:
         return np.convolve(a=ts, v=np.ones(window_size), mode="valid")
 
     @staticmethod
-    def sliding_disaggregation(
-        ts: npt.NDArray[np.float64],
-        window_size: int,
-    ) -> npt.NDArray[np.float64]:
-        """Disaggregate the time-series using a sliding window."""
-        return np.concatenate((np.full(window_size - 1, np.nan), ts))
-
-    @staticmethod
     def block_aggregation(
         ts: npt.NDArray[np.float64],
         window_size: int,
@@ -89,5 +81,9 @@ class TimeSeriesResampler:
         s = len(temporal_weights)
         pad = s - (len(ts) % s)
         ts_padded = np.concatenate((ts, [np.nan] * pad))
-        res = (ts_padded.reshape((-1, s)) * temporal_weights).flatten()
+
+        # Scale the weights based on the number of periods
+        scaled_weights = temporal_weights * s
+
+        res = (ts_padded.reshape((-1, s)) * scaled_weights).flatten()
         return res[:-pad]

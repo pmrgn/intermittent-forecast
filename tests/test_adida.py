@@ -9,15 +9,29 @@ from intermittent_forecast.croston import CRO
 
 
 @pytest.fixture
-def intermittent_time_series() -> npt.NDArray[np.float64]:
+def time_series() -> npt.NDArray[np.float64]:
     """Fixture for a basic time series."""
     return np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
 
 @pytest.fixture
-def croston_model(intermittent_time_series: npt.NDArray[np.float64]) -> CRO:
+def croston_model(time_series: npt.NDArray[np.float64]) -> CRO:
     """Fixture for the CRO model."""
-    return CRO(intermittent_time_series)
+    return CRO(time_series)
+
+
+@pytest.fixture
+def time_series_cyclical() -> npt.NDArray[np.float64]:
+    """Fixture for a basic time series."""
+    return np.array([1, 2, 3, 4, 5, 1, 2, 3, 4, 5])
+
+
+@pytest.fixture
+def croston_model_cyclical(
+    time_series_cyclical: npt.NDArray[np.float64],
+) -> CRO:
+    """Fixture for the CRO model."""
+    return CRO(time_series_cyclical)
 
 
 @pytest.mark.parametrize(
@@ -57,15 +71,15 @@ def test_adida_forecast_croston_block_uniform(
                 np.nan,
                 np.nan,
                 np.nan,
-                1,
-                0.909090,
-                1.090909,
-                2,
-                1.818181,
-                2.181818,
                 3,
                 2.727272,
                 3.272727,
+                6,
+                5.454545,
+                6.545454,
+                9,
+                8.181818,
+                9.818181,
             ],
         ),
     ],
@@ -86,5 +100,41 @@ def test_adida_forecast_croston_block_seasonal(
     np.testing.assert_allclose(
         result,
         np.array(expected),
+        rtol=1e-5,
+    )
+
+
+def test_adida_forecast_croston_cyclical_block_seasonal(
+    croston_model_cyclical: CRO,
+) -> None:
+    """Test the ADIDA aggregation method."""
+    adida_model = ADIDA(
+        model=croston_model_cyclical,
+        aggregation_period=5,
+        aggregation_mode="block",
+        disaggregation_mode="seasonal",
+    )
+    result = adida_model.forecast(alpha=1, beta=1)
+    np.testing.assert_allclose(
+        result,
+        np.array(
+            [
+                np.nan,
+                np.nan,
+                np.nan,
+                np.nan,
+                np.nan,
+                1,
+                2,
+                3,
+                4,
+                5,
+                1,
+                2,
+                3,
+                4,
+                5,
+            ]
+        ),
         rtol=1e-5,
     )

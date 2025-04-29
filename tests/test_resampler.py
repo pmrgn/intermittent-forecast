@@ -138,27 +138,6 @@ def test_disaggregation_block(
 
 
 @pytest.mark.parametrize(
-    ("size", "expected"),
-    [
-        (1, [4, 7, 0, 9]),
-        (2, [np.nan, 4, 7, 0, 9]),
-        (3, [np.nan, np.nan, 4, 7, 0, 9]),
-    ],
-)
-def test_disaggregation_sliding(
-    size: int,
-    expected: npt.NDArray[np.float64],
-    even_aggregated_time_series: npt.NDArray[np.float64],
-) -> None:
-    """Test non-overlapping aggregation."""
-    result = TimeSeriesResampler.sliding_disaggregation(
-        even_aggregated_time_series,
-        window_size=size,
-    )
-    np.testing.assert_equal(result, expected)
-
-
-@pytest.mark.parametrize(
     ("ts", "cycle", "expected"),
     [
         (
@@ -200,14 +179,19 @@ def test_calculate_temporal_weights(
     ("ts", "temporal_weights", "expected"),
     [
         (
+            np.array([2, 2, 2, 2]),
+            np.array([0.1, 0.2, 0.4, 0.3]),
+            np.array([0.8, 1.6, 3.2, 2.4]),
+        ),
+        (
             np.array([4, 7, 2, 9, 1, 6, 4, 8]),
             np.array([0.1, 0.2, 0.4, 0.3]),
-            np.array([0.4, 1.4, 0.8, 2.7, 0.1, 1.2, 1.6, 2.4]),
+            np.array([1.6, 5.6, 3.2, 10.8, 0.4, 4.8, 6.4, 9.6]),
         ),
         (
             np.array([4, 7, 2, 9, 1]),
             np.array([0.1, 0.2, 0.7]),
-            np.array([0.4, 1.4, 1.4, 0.9, 0.2]),
+            np.array([1.2, 4.2, 4.2, 2.7, 0.6]),
         ),
     ],
 )
@@ -231,7 +215,7 @@ def test_apply_temporal_weights(
             np.array([4, 1, 2, 3, 4, 1, 2, 3, 4]),
             4,
             np.array([1, 1, 1, 1, 1, 1, 1, 1, 1]),
-            np.array([0.4, 0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3, 0.4]),
+            np.array([1.6, 0.4, 0.8, 1.2, 1.6, 0.4, 0.8, 1.2, 1.6]),
         ),
     ],
 )
