@@ -121,14 +121,23 @@ class ADIDA:
             Disaggregated forecasted values.
 
         """
-        # disaggregate based on the mode of aggregation
+        # TODO: Fix logic so it's clearer.
+        # Prepare for disaggregation, which depends on how the forecast was
+        # aggregated.
         if self._aggregation_mode == AggregationMode.SLIDING:
-            forecast = TimeSeriesResampler.sliding_disaggregation(
-                ts=self._aggregated_forecast,
-                window_size=self._aggregation_period,
+            # Prepare the forecast for disaggregation
+            # forecast = TimeSeriesResampler.sliding_disaggregation(
+            #     ts=self._aggregated_forecast,
+            #     window_size=self._aggregation_period,
+            # )
+            forecast = np.concatenate(
+                (
+                    np.full(self._aggregation_period - 1, np.nan),
+                    self._aggregated_forecast,
+                ),
             )
 
-        elif self._aggregation_mode == AggregationMode.BLOCK:
+        else:
             forecast = TimeSeriesResampler.block_disaggregation(
                 ts=self._aggregated_forecast,
                 window_size=self._aggregation_period,
@@ -148,9 +157,7 @@ class ADIDA:
 
         elif self._disaggregation_mode == DisaggregationMode.UNIFORM:
             # Implement uniform disaggregation logic here
-            ret = TimeSeriesResampler.block_disaggregation(
-                ts=self._aggregated_forecast,
-                window_size=self._aggregation_period,
-            )
+            # TODO: Cleanup
+            ret = forecast
 
         return ret
