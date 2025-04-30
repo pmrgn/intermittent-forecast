@@ -41,7 +41,6 @@ class ADIDA:
                 f"Got: {type(model)}",
             )
             raise TypeError(err_msg)
-        self._model = model
         self._aggregated_model = deepcopy(model)
         self._aggregation_period = aggregation_period
         self._aggregation_mode = utils.get_enum_from_str(
@@ -54,10 +53,34 @@ class ADIDA:
             enum_class=DisaggregationMode,
             mode_name="disaggregation_mode",
         )
+        self._temporal_weights: npt.NDArray | None = None
 
-    def fit(self) -> None:
+    def fit(
+        self,
+        ts: npt.NDArray[np.float64],
+        **kwargs: Any,  # noqa: ANN401
+    ) -> ADIDA:
         """Fit the model."""
-        self._aggregated_model.fit()
+        # TODO: Validate ts? Validated in BaseForecaster?
+        # Caclulate the temporal weights required for seasonal disaggregation
+        if self._disaggregation_mode == DisaggregationMode.SEASONAL:
+            self._temporal_weights = (
+                TimeSeriesResampler.calculate_temporal_weights(
+                    ts=ts,
+                    cycle=self._aggregation_period,
+                )
+            )
+        # Aggregate the time series
+        aggregated_ts = self._aggregate(ts)
+
+        # Set the aggregated time series to the model
+        self._aggregated_model.set_timeseries(aggregated_ts)
+
+        self._aggregated_model.fit(
+            ts=self._aggregated_model.get_timeseries(),
+            **kwargs,
+        )
+        return self
 
     def forecast(
         self,
@@ -71,9 +94,6 @@ class ADIDA:
             Forecasted values.
 
         """
-        # Aggregate the time series
-        self._aggregated_model.ts = self._aggregate()
-
         self._aggregated_forecast = self._aggregated_model.forecast(
             **kwargs,
         )
@@ -81,25 +101,24 @@ class ADIDA:
 
     def _aggregate(
         self,
+        ts: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
         """Aggregate the time-series using a specified window size.
 
         Parameters
         ----------
-        size : int, optional
-            Window size for aggregation, by default 1.
-        mode : str, optional
-            Aggregation mode, by default AggregationMode.BLOCK.value.
+        ts : npt.NDArray[np.float64]
+            Time-series to aggregate.
 
         """
         if self._aggregation_mode == AggregationMode.SLIDING:
             _aggregated_ts = TimeSeriesResampler.sliding_aggregation(
-                ts=self._model.ts,
+                ts=ts,
                 window_size=self._aggregation_period,
             )
         elif self._aggregation_mode == AggregationMode.BLOCK:
             _aggregated_ts = TimeSeriesResampler.block_aggregation(
-                ts=self._model.ts,
+                ts=ts,
                 window_size=self._aggregation_period,
             )
 
@@ -144,15 +163,10 @@ class ADIDA:
             )
 
         if self._disaggregation_mode == DisaggregationMode.SEASONAL:
-            # Compute the temporal weights of the original time-series
-            temporal_weights = TimeSeriesResampler.calculate_temporal_weights(
-                ts=self._model.ts,
-                cycle=self._aggregation_period,
-            )
             # Apply the temporal weights to the forecast
             ret = TimeSeriesResampler.apply_temporal_weights(
                 ts=forecast,
-                temporal_weights=temporal_weights,
+                temporal_weights=self._temporal_weights,
             )
 
         elif self._disaggregation_mode == DisaggregationMode.UNIFORM:

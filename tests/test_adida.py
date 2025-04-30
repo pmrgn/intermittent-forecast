@@ -9,29 +9,15 @@ from intermittent_forecast.croston import CRO
 
 
 @pytest.fixture
-def time_series() -> npt.NDArray[np.float64]:
+def time_series_linear() -> npt.NDArray[np.float64]:
     """Fixture for a basic time series."""
     return np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-
-
-@pytest.fixture
-def croston_model(time_series: npt.NDArray[np.float64]) -> CRO:
-    """Fixture for the CRO model."""
-    return CRO(time_series)
 
 
 @pytest.fixture
 def time_series_cyclical() -> npt.NDArray[np.float64]:
     """Fixture for a basic time series."""
     return np.array([1, 2, 3, 4, 5, 1, 2, 3, 4, 5])
-
-
-@pytest.fixture
-def croston_model_cyclical(
-    time_series_cyclical: npt.NDArray[np.float64],
-) -> CRO:
-    """Fixture for the CRO model."""
-    return CRO(time_series_cyclical)
 
 
 @pytest.mark.parametrize(
@@ -43,18 +29,18 @@ def croston_model_cyclical(
     ],
 )
 def test_adida_forecast_croston_block_uniform(
-    croston_model: CRO,
+    time_series_linear: npt.NDArray[np.float64],
     size: int,
     expected: list[np.float64],
 ) -> None:
     """Test the ADIDA aggregation method."""
     adida_model = ADIDA(
-        model=croston_model,
+        model=CRO(),
         aggregation_period=size,
         aggregation_mode="block",
         disaggregation_mode="uniform",
     )
-    result = adida_model.forecast(alpha=1, beta=1)
+    result = adida_model.fit(ts=time_series_linear, alpha=1, beta=1).forecast()
     np.testing.assert_allclose(
         result,
         np.array(expected),
@@ -85,18 +71,22 @@ def test_adida_forecast_croston_block_uniform(
     ],
 )
 def test_adida_forecast_croston_block_seasonal(
-    croston_model: CRO,
+    time_series_linear: npt.NDArray[np.float64],
     size: int,
     expected: list[np.float64],
 ) -> None:
     """Test the ADIDA aggregation method."""
     adida_model = ADIDA(
-        model=croston_model,
+        model=CRO(),
         aggregation_period=size,
         aggregation_mode="block",
         disaggregation_mode="seasonal",
     )
-    result = adida_model.forecast(alpha=1, beta=1)
+    result = adida_model.fit(
+        ts=time_series_linear,
+        alpha=1,
+        beta=1,
+    ).forecast()
     np.testing.assert_allclose(
         result,
         np.array(expected),
@@ -105,16 +95,20 @@ def test_adida_forecast_croston_block_seasonal(
 
 
 def test_adida_forecast_croston_cyclical_block_seasonal(
-    croston_model_cyclical: CRO,
+    time_series_cyclical: npt.NDArray[np.float64],
 ) -> None:
     """Test the ADIDA aggregation method."""
     adida_model = ADIDA(
-        model=croston_model_cyclical,
+        model=CRO(),
         aggregation_period=5,
         aggregation_mode="block",
         disaggregation_mode="seasonal",
     )
-    result = adida_model.forecast(alpha=1, beta=1)
+    result = adida_model.fit(
+        ts=time_series_cyclical,
+        alpha=1,
+        beta=1,
+    ).forecast()
     np.testing.assert_allclose(
         result,
         np.array(
@@ -134,7 +128,7 @@ def test_adida_forecast_croston_cyclical_block_seasonal(
                 3,
                 4,
                 5,
-            ]
+            ],
         ),
         rtol=1e-5,
     )

@@ -38,14 +38,37 @@ class CrostonVariant(BaseForecaster):
 
     requires_bias_correction = False
 
-    def __init__(
-        self,
-        ts: list[float] | npt.NDArray[np.float64],
-    ) -> None:
+    def __init__(self) -> None:
         """Initialise the Croston variant."""
-        super().__init__(ts)
+        super().__init__()
+        self.alpha: float | None = None
+        self.beta: float | None = None
 
-    def fit(self, metric: str = "MSE") -> None:
+    def _fit(
+        self,
+        alpha: float | None = None,
+        beta: float | None = None,
+        metric: str = "MSE",
+    ) -> None:
+        """Fit the model to the time-series."""
+        if alpha is None or beta is None:
+            self._optimise_and_set_parameters(metric=metric)
+        else:
+            # TODO: Check code duplication
+            self.alpha = self._validate_float_within_inclusive_bounds(
+                name="alpha",
+                value=alpha,
+                min_value=0,
+                max_value=1,
+            )
+            self.beta = self._validate_float_within_inclusive_bounds(
+                name="beta",
+                value=beta,
+                min_value=0,
+                max_value=1,
+            )
+
+    def _optimise_and_set_parameters(self, metric: str = "MSE") -> None:
         """Optimise the smoothing parameters alpha and beta."""
         _metric = get_metric_function(metric)
 
@@ -100,11 +123,14 @@ class CrostonVariant(BaseForecaster):
         beta: float | None = None,
     ) -> npt.NDArray[np.float64]:
         """Perform forecasting for CRO, SBA, and SBJ methods."""
+        # Get the time series data.
+        ts = self.get_timeseries()
+
         alpha = alpha or self.alpha
         beta = beta or self.beta
         if alpha is None or beta is None:
             err_msg = (
-                "Alpha and beta must be set before calling forecast, or call"
+                "Alpha and beta must be set before calling forecast, or call "
                 "the fit() method automatically select values."
             )
             raise ValueError(err_msg)
@@ -123,8 +149,8 @@ class CrostonVariant(BaseForecaster):
             max_value=1,
         )
 
-        non_zero_demand = self._get_nonzero_demand_array(self.ts)
-        p_idx = self._get_nonzero_demand_indices(self.ts)
+        non_zero_demand = self._get_nonzero_demand_array(ts)
+        p_idx = self._get_nonzero_demand_indices(ts)
         p_diff = self._get_nonzero_demand_intervals(p_idx)
 
         # Intialise an array for the demand.
@@ -153,7 +179,7 @@ class CrostonVariant(BaseForecaster):
             f *= self._get_bias_correction_value(beta)
 
         # Initialize forecast array
-        forecast = np.zeros(len(self.ts))
+        forecast = np.zeros(len(ts))
         forecast[p_idx] = f
 
         # Forward fill non-zero forecasted demand values
@@ -215,13 +241,6 @@ class SBA(CrostonVariant):
 
     requires_bias_correction = True
 
-    def __init__(
-        self,
-        ts: list[float] | npt.NDArray[np.float64],
-    ) -> None:
-        """Initialise the SBA variant of Croston's method."""
-        super().__init__(ts)
-
     def _get_bias_correction_value(self, beta: float) -> float:
         """Bias correction applicable to the SBA method."""
         return 1 - (beta / 2)
@@ -246,6 +265,9 @@ class TSB(CrostonVariant):
         beta: float | None = None,
     ) -> npt.NDArray[np.float64]:
         """Perform forecasting using TSB method."""
+        # Get the time series data.
+        ts = self.get_timeseries()
+
         alpha = alpha or self.alpha
         beta = beta or self.beta
         if alpha is None or beta is None:
@@ -268,11 +290,11 @@ class TSB(CrostonVariant):
             min_value=0,
             max_value=1,
         )
-        n = len(self.ts)
-        p_idx = self._get_nonzero_demand_indices(self.ts)
+        n = len(ts)
+        p_idx = self._get_nonzero_demand_indices(ts)
         z = self._initialise_array(
             array_length=n,
-            initial_value=self.ts[p_idx[0]],
+            initial_value=ts[p_idx[0]],
         )
 
         p = self._initialise_array(
@@ -282,8 +304,8 @@ class TSB(CrostonVariant):
 
         # Update rules are dependent on whether there is a non-zero demand.
         for i in range(1, n):
-            if self.ts[i] > 0:
-                z[i] = alpha * self.ts[i] + (1 - alpha) * z[i - 1]
+            if ts[i] > 0:
+                z[i] = alpha * ts[i] + (1 - alpha) * z[i - 1]
                 p[i] = beta + (1 - beta) * p[i - 1]
             else:
                 z[i] = z[i - 1]

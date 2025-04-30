@@ -3,50 +3,45 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-
-AllowedForecastParmams = float | int | None
 
 
 class BaseForecaster(ABC):
     """Base class for forecasting models."""
 
-    def __init__(self, ts: list[float] | npt.NDArray[np.float64]) -> None:
-        """Initialise the forecaster.
+    def __init__(self) -> None:
+        """Initialise the forecaster."""
+        self._ts: npt.NDArray[np.float64] | None = None
 
-        Parameters
-        ----------
-        ts : list[float] | npt.NDArray[np.float64]
-            Time-series to forecast.
-
-        Raises
-        ------
-        TypeError
-            If `ts` is not a list or numpy array.
-        ValueError
-            If `ts` is not 1-dimensional.
-        TypeError
-            If `ts` does not contain integers or floats.
-
-        """
-        self._ts = self._validate_time_series(ts)
-        self.alpha = None
-        self.beta = None
-
-    @property
-    def ts(self) -> npt.NDArray[np.float64]:
+    def get_timeseries(self) -> npt.NDArray[np.float64]:
         """Get the time-series."""
+        if self._ts is None:
+            err_msg = (
+                "Time-series not set. Use `set_timeseries` method or call "
+                "the `fit` method to with a time-series."
+            )
+            raise ValueError(err_msg)
         return self._ts
 
-    @ts.setter
-    def ts(self, ts: list[float] | npt.NDArray[np.float64]) -> None:
+    def set_timeseries(self, ts: list[float] | npt.NDArray[np.float64]) -> None:
         """Set the time-series."""
         self._ts = self._validate_time_series(ts)
 
+    def fit(
+        self,
+        ts: npt.NDArray[np.float64],
+        **kwargs: Any,  # noqa: ANN401
+    ) -> BaseForecaster:
+        """Fit the model to the time-series."""
+        self.set_timeseries(ts)
+        self._fit(**kwargs)
+        return self
+
     @abstractmethod
-    def fit(self) -> None:
+    def _fit(self) -> None:
         """Fit the model to the time-series."""
 
     @abstractmethod
