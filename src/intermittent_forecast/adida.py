@@ -53,7 +53,7 @@ class ADIDA:
             enum_class=DisaggregationMode,
             mode_name="disaggregation_mode",
         )
-        self._temporal_weights: npt.NDArray | None = None
+        self._temporal_weights: npt.NDArray[np.float64] | None = None
 
     def fit(
         self,
@@ -61,7 +61,6 @@ class ADIDA:
         **kwargs: Any,  # noqa: ANN401
     ) -> ADIDA:
         """Fit the model."""
-        # TODO: Validate ts? Validated in BaseForecaster?
         # Aggregate the time series
         aggregated_ts = self._aggregate(ts)
 
@@ -124,7 +123,7 @@ class ADIDA:
                 window_size=self._aggregation_period,
             )
 
-        return _aggregated_ts
+        return utils.validate_time_series(_aggregated_ts)
 
     def _disaggregate(
         self,
