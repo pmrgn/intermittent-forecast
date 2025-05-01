@@ -79,7 +79,7 @@ class ADIDA:
             self._temporal_weights = (
                 TimeSeriesResampler.calculate_temporal_weights(
                     ts=ts,
-                    cycle=self._aggregation_period,
+                    cycle_length=self._aggregation_period,
                 )
             )
         return self
@@ -168,7 +168,7 @@ class ADIDA:
             # Apply the temporal weights to the forecast
             ret = TimeSeriesResampler.apply_temporal_weights(
                 ts=forecast,
-                temporal_weights=self._temporal_weights,
+                weights=self._temporal_weights,
             )
 
         elif self._disaggregation_mode == DisaggregationMode.UNIFORM:

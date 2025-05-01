@@ -71,19 +71,19 @@ class TimeSeriesResampler:
     @staticmethod
     def calculate_temporal_weights(
         ts: npt.NDArray[np.float64],
-        cycle: int,
+        cycle_length: int,
     ) -> npt.NDArray[np.float64]:
         """Calculate the distribution for a time series.
 
         If the time series is not a multiple of the cycle, it will be padded with
 
         """
-        if len(ts) < cycle:
+        if len(ts) < cycle_length:
             err_msg = "Time series must be greater than cycle size."
             raise ValueError(err_msg)
 
         # Create an index array that repeats every cycle
-        idx = np.arange(len(ts)) % cycle
+        idx = np.arange(len(ts)) % cycle_length
 
         # Sum the time series for each step in the cycle
         sums = np.bincount(idx, weights=ts)
@@ -103,16 +103,13 @@ class TimeSeriesResampler:
     @staticmethod
     def apply_temporal_weights(
         ts: npt.NDArray[np.float64],
-        temporal_weights: npt.NDArray[np.float64],
+        weights: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
         """Apply the temporal distribution to a time series."""
-        # TODO: Clean up logic
-        s = len(temporal_weights)
-        pad = s - (len(ts) % s)
-        ts_padded = np.concatenate((ts, [np.nan] * pad))
+        # Tile the weights up to the length of the time series
+        weights_rpt = utils.validate_array_is_numeric(
+            np.tile(weights, len(ts) // len(weights) + 1)[: len(ts)],
+        )
 
-        # Scale the weights based on the number of periods
-        scaled_weights = temporal_weights * s
-
-        res = (ts_padded.reshape((-1, s)) * scaled_weights).flatten()
-        return res[:-pad]
+        # Apply the weights to the time series, scaling by the number of periods
+        return utils.validate_array_is_numeric(ts * weights_rpt * len(weights))

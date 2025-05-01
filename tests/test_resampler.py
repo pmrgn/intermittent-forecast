@@ -170,7 +170,7 @@ def test_calculate_temporal_weights(
     """Test computing temporal distribution."""
     result = TimeSeriesResampler.calculate_temporal_weights(
         ts=ts,
-        cycle=cycle,
+        cycle_length=cycle,
     )
     np.testing.assert_allclose(result, expected, rtol=1e-5)
 
@@ -203,7 +203,7 @@ def test_apply_temporal_weights(
     """Test applying a temporal distribution to a time-series."""
     result = TimeSeriesResampler.apply_temporal_weights(
         ts=ts,
-        temporal_weights=temporal_weights,
+        weights=temporal_weights,
     )
     np.testing.assert_allclose(result, expected, rtol=1e-5)
 
@@ -228,11 +228,11 @@ def test_calculate_and_apply_temporal_weights(
     """Test applying a temporal distribution to a time-series."""
     temporal_weights = TimeSeriesResampler.calculate_temporal_weights(
         ts=ts,
-        cycle=cycle,
+        cycle_length=cycle,
     )
     result = TimeSeriesResampler.apply_temporal_weights(
         ts=ts_agg,
-        temporal_weights=temporal_weights,
+        weights=temporal_weights,
     )
     np.testing.assert_allclose(result, expected, rtol=1e-5)
 
