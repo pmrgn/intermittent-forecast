@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-import numpy.typing as npt
 
 from intermittent_forecast import utils
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 class BaseForecaster(ABC):

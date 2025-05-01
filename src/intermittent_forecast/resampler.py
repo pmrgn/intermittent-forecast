@@ -5,6 +5,8 @@ from enum import Enum
 import numpy as np
 import numpy.typing as npt
 
+from intermittent_forecast import utils
+
 
 class AggregationMode(Enum):
     """Enum for aggregation modes."""
@@ -37,9 +39,26 @@ class TimeSeriesResampler:
         window_size: int,
     ) -> npt.NDArray[np.float64]:
         """Aggregate the time-series using a fixed window."""
-        trim = len(ts) % window_size
-        ts_trim = ts[trim:]
-        return ts_trim.reshape((-1, window_size)).sum(axis=1)
+        ts_length = len(ts)
+        if ts_length < 1 or window_size < 1:
+            err_msg = "Time series and window size must be greater than 0."
+            raise ValueError(err_msg)
+
+        if ts_length < window_size:
+            err_msg = (
+                "Time series must be greater than window size for block "
+                "aggregation."
+            )
+            raise ValueError(err_msg)
+
+        # The beginning of the time series is trimmed, else it may introduce a bias.
+        trim_size = ts_length % window_size
+        ts_trimmed = ts[trim_size:]
+
+        # Ensure aggregated time series is valid
+        return utils.validate_time_series(
+            ts_trimmed.reshape((-1, window_size)).sum(axis=1),
+        )
 
     @staticmethod
     def block_disaggregation(

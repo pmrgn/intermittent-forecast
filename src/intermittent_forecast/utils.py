@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+
+if TYPE_CHECKING:
+    from enum import Enum
 
 
 def get_enum_from_str(
