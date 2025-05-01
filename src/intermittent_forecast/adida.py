@@ -62,14 +62,6 @@ class ADIDA:
     ) -> ADIDA:
         """Fit the model."""
         # TODO: Validate ts? Validated in BaseForecaster?
-        # Caclulate the temporal weights required for seasonal disaggregation
-        if self._disaggregation_mode == DisaggregationMode.SEASONAL:
-            self._temporal_weights = (
-                TimeSeriesResampler.calculate_temporal_weights(
-                    ts=ts,
-                    cycle=self._aggregation_period,
-                )
-            )
         # Aggregate the time series
         aggregated_ts = self._aggregate(ts)
 
@@ -77,9 +69,19 @@ class ADIDA:
         self._aggregated_model.set_timeseries(aggregated_ts)
 
         self._aggregated_model.fit(
-            ts=self._aggregated_model.get_timeseries(),
+            ts=aggregated_ts,
             **kwargs,
         )
+
+        # If required, caclulate the temporal weights required for seasonal
+        # disaggregation
+        if self._disaggregation_mode == DisaggregationMode.SEASONAL:
+            self._temporal_weights = (
+                TimeSeriesResampler.calculate_temporal_weights(
+                    ts=ts,
+                    cycle=self._aggregation_period,
+                )
+            )
         return self
 
     def forecast(
