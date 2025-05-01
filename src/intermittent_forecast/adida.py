@@ -53,7 +53,7 @@ class ADIDA:
             enum_class=DisaggregationMode,
             mode_name="disaggregation_mode",
         )
-        self._temporal_weights: npt.NDArray | None = None
+        self._temporal_weights: npt.NDArray[np.float64] | None = None
 
     def fit(
         self,
@@ -61,15 +61,6 @@ class ADIDA:
         **kwargs: Any,  # noqa: ANN401
     ) -> ADIDA:
         """Fit the model."""
-        # TODO: Validate ts? Validated in BaseForecaster?
-        # Caclulate the temporal weights required for seasonal disaggregation
-        if self._disaggregation_mode == DisaggregationMode.SEASONAL:
-            self._temporal_weights = (
-                TimeSeriesResampler.calculate_temporal_weights(
-                    ts=ts,
-                    cycle=self._aggregation_period,
-                )
-            )
         # Aggregate the time series
         aggregated_ts = self._aggregate(ts)
 
@@ -77,9 +68,19 @@ class ADIDA:
         self._aggregated_model.set_timeseries(aggregated_ts)
 
         self._aggregated_model.fit(
-            ts=self._aggregated_model.get_timeseries(),
+            ts=aggregated_ts,
             **kwargs,
         )
+
+        # If required, caclulate the temporal weights required for seasonal
+        # disaggregation
+        if self._disaggregation_mode == DisaggregationMode.SEASONAL:
+            self._temporal_weights = (
+                TimeSeriesResampler.calculate_temporal_weights(
+                    ts=ts,
+                    cycle_length=self._aggregation_period,
+                )
+            )
         return self
 
     def forecast(
@@ -122,7 +123,7 @@ class ADIDA:
                 window_size=self._aggregation_period,
             )
 
-        return _aggregated_ts
+        return utils.validate_time_series(_aggregated_ts)
 
     def _disaggregate(
         self,
@@ -166,7 +167,7 @@ class ADIDA:
             # Apply the temporal weights to the forecast
             ret = TimeSeriesResampler.apply_temporal_weights(
                 ts=forecast,
-                temporal_weights=self._temporal_weights,
+                weights=self._temporal_weights,
             )
 
         elif self._disaggregation_mode == DisaggregationMode.UNIFORM:
