@@ -59,3 +59,13 @@ def validate_time_series(
         raise ValueError(err_msg)
 
     return ts
+
+
+def validate_array_is_numeric(
+    arr: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """Validate the array is numeric."""
+    if not np.issubdtype(arr.dtype, np.number):
+        err_msg = "Array must contain numeric values."
+        raise TypeError(err_msg)
+    return arr

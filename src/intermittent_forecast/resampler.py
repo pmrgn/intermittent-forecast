@@ -56,7 +56,7 @@ class TimeSeriesResampler:
         ts_trimmed = ts[trim_size:]
 
         # Ensure aggregated time series is valid
-        return utils.validate_time_series(
+        return utils.validate_array_is_numeric(
             ts_trimmed.reshape((-1, window_size)).sum(axis=1),
         )
 
@@ -78,17 +78,27 @@ class TimeSeriesResampler:
         If the time series is not a multiple of the cycle, it will be padded with
 
         """
-        # TODO: Validation - cycle must be > ts
-        # TODO: Clean up logic
+        if len(ts) < cycle:
+            err_msg = "Time series must be greater than cycle size."
+            raise ValueError(err_msg)
+
+        # Create an index array that repeats every cycle
         idx = np.arange(len(ts)) % cycle
+
+        # Sum the time series for each step in the cycle
         sums = np.bincount(idx, weights=ts)
+
+        # Count the number of occurrences for each step in the cycle, as the
+        # time series may not be an exact multiple of the cycle.
         counts = np.bincount(idx)
 
-        # Either average per weekday:
+        # Calculate the average for each step in the cycle
         averages = sums / counts
 
-        dist = averages / averages.sum()
-        return dist
+        # The weights are the proportion for each step in the cycle
+        temporal_weights = averages / averages.sum()
+
+        return utils.validate_array_is_numeric(temporal_weights)
 
     @staticmethod
     def apply_temporal_weights(
