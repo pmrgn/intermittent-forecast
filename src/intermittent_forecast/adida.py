@@ -41,6 +41,7 @@ class ADIDA:
                 f"Got: {type(model)}",
             )
             raise TypeError(err_msg)
+        self._base_ts_length: int | None = None
         self._aggregated_model = deepcopy(model)
         self._aggregation_period = aggregation_period
         self._aggregation_mode = utils.get_enum_from_str(
@@ -61,6 +62,9 @@ class ADIDA:
         **kwargs: Any,  # noqa: ANN401
     ) -> ADIDA:
         """Fit the model."""
+        # Cache length of the input time series
+        self._base_ts_length = len(ts)
+
         # Aggregate the time series
         aggregated_ts = self._aggregate(ts)
 
@@ -141,27 +145,28 @@ class ADIDA:
             Disaggregated forecasted values.
 
         """
-        # TODO: Fix logic so it's clearer.
         # Prepare for disaggregation, which depends on how the forecast was
         # aggregated.
         if self._aggregation_mode == AggregationMode.SLIDING:
-            # Prepare the forecast for disaggregation
-            # forecast = TimeSeriesResampler.sliding_disaggregation(
-            #     ts=self._aggregated_forecast,
-            #     window_size=self._aggregation_period,
-            # )
-            forecast = np.concatenate(
-                (
-                    np.full(self._aggregation_period - 1, np.nan),
-                    self._aggregated_forecast,
-                ),
-            )
-
-        else:
-            forecast = TimeSeriesResampler.block_disaggregation(
+            forecast = TimeSeriesResampler.sliding_disaggregation(
                 ts=self._aggregated_forecast,
                 window_size=self._aggregation_period,
             )
+
+        elif self._aggregation_mode == AggregationMode.BLOCK:
+            # Block aggregation will return the series to
+            forecast = TimeSeriesResampler.block_disaggregation(
+                aggregated_ts=self._aggregated_forecast,
+                window_size=self._aggregation_period,
+                base_ts_length=self._base_ts_length,
+            )
+
+        else:
+            err_msg = (
+                "ADIDA disaggregation only supports sliding or block "
+                "aggregation."
+            )
+            raise ValueError(err_msg)
 
         if self._disaggregation_mode == DisaggregationMode.SEASONAL:
             # Apply the temporal weights to the forecast

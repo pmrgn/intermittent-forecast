@@ -69,3 +69,19 @@ def validate_array_is_numeric(
         err_msg = "Array must contain numeric values."
         raise TypeError(err_msg)
     return arr
+
+
+def validate_positive_integer(
+    value: int,
+    name: str,
+) -> int:
+    """Validate the value is a positive integer."""
+    if not isinstance(value, int):
+        err_msg = f"{name} must be an integer."
+        raise TypeError(err_msg)
+
+    if value < 1:
+        err_msg = f"{name} must be greater than 0."
+        raise ValueError(err_msg)
+
+    return value

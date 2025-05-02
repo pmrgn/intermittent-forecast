@@ -101,37 +101,73 @@ def test_aggregation_even_overlapping(
 
 
 @pytest.mark.parametrize(
-    ("size", "expected"),
+    ("window_size", "base_ts_length", "expected"),
     [
-        (1, [4, 7, 0, 9]),
-        (2, [2, 2, 3.5, 3.5, 0, 0, 4.5, 4.5]),
+        (1, 4, [4, 8, 0, 9]),
+        (2, 8, [2, 2, 4, 4, 0, 0, 4.5, 4.5]),
+        (2, 9, [np.nan, 2, 2, 4, 4, 0, 0, 4.5, 4.5]),
         (
-            3,
+            4,
+            16,
+            [1, 1, 1, 1, 2, 2, 2, 2, 0, 0, 0, 0, 2.25, 2.25, 2.25, 2.25],
+        ),
+        (
+            4,
+            18,
             [
-                1.333333,
-                1.333333,
-                1.333333,
-                2.333333,
-                2.333333,
-                2.333333,
+                np.nan,
+                np.nan,
+                1,
+                1,
+                1,
+                1,
+                2,
+                2,
+                2,
+                2,
                 0,
                 0,
                 0,
-                3,
-                3,
-                3,
+                0,
+                2.25,
+                2.25,
+                2.25,
+                2.25,
             ],
         ),
     ],
 )
 def test_disaggregation_block(
-    size: int,
+    window_size: int,
+    base_ts_length: int,
     expected: npt.NDArray[np.float64],
-    even_aggregated_time_series: npt.NDArray[np.float64],
 ) -> None:
     """Test non-overlapping aggregation."""
+    aggregated_ts = np.array([4, 8, 0, 9])
     result = TimeSeriesResampler.block_disaggregation(
-        even_aggregated_time_series,
+        aggregated_ts=aggregated_ts,
+        window_size=window_size,
+        base_ts_length=base_ts_length,
+    )
+    np.testing.assert_allclose(result, expected, rtol=1e-5)
+
+
+@pytest.mark.parametrize(
+    ("size", "expected"),
+    [
+        (1, [4, 7, 2, 9, 0, 6]),
+        (2, [np.nan, 2, 3.5, 1, 4.5, 0, 3]),
+        (3, [np.nan, np.nan, 1.333333, 2.333333, 0.666666, 3, 0, 2]),
+    ],
+)
+def test_disaggregation_sliding(
+    size: int,
+    expected: npt.NDArray[np.float64],
+) -> None:
+    """Test non-overlapping aggregation."""
+    ts = np.array([4, 7, 2, 9, 0, 6])
+    result = TimeSeriesResampler.sliding_disaggregation(
+        ts=ts,
         window_size=size,
     )
     np.testing.assert_allclose(result, expected, rtol=1e-5)

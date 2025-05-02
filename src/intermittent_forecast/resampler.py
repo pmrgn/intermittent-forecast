@@ -34,6 +34,25 @@ class TimeSeriesResampler:
         return np.convolve(a=ts, v=np.ones(window_size), mode="valid")
 
     @staticmethod
+    def sliding_disaggregation(
+        ts: npt.NDArray[np.float64],
+        window_size: int,
+    ) -> npt.NDArray[np.float64]:
+        """Disaggregate the time-series using a sliding window."""
+        window_size = utils.validate_positive_integer(
+            value=window_size,
+            name="window_size",
+        )
+        # Pad the beginning of the forecast with NaN values, to match the
+        # length of the original time series. A sliding aggregation results
+        # in a forecast that is shorter than the original time series by
+        # (window_size - 1) values.
+        ts_disaggregated_padded = np.concatenate(
+            (np.full(window_size - 1, np.nan), ts / window_size),
+        )
+        return ts_disaggregated_padded
+
+    @staticmethod
     def block_aggregation(
         ts: npt.NDArray[np.float64],
         window_size: int,
@@ -62,11 +81,22 @@ class TimeSeriesResampler:
 
     @staticmethod
     def block_disaggregation(
-        ts: npt.NDArray[np.float64],
+        aggregated_ts: npt.NDArray[np.float64],
         window_size: int,
+        base_ts_length: int,
     ) -> npt.NDArray[np.float64]:
         """Disaggregate the time-series using a fixed size."""
-        return np.repeat(ts, window_size) / window_size
+        # Repeat the aggregated time series to match the length of the original
+        # time series.
+        ret = np.repeat(aggregated_ts, window_size) / window_size
+        # Pad the beginning of the forecast with NaN values, to match the
+        # length of the original time series length.
+        pad_length = base_ts_length - len(ret)
+        if pad_length > 0:
+            ret = np.concatenate(
+                (np.full(pad_length, np.nan), ret),
+            )
+        return ret
 
     @staticmethod
     def calculate_temporal_weights(
