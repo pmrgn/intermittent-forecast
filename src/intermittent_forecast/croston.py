@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, TypedDict
+from typing import Callable, Tuple, TypedDict
 
 import numpy as np
 import numpy.typing as npt
@@ -51,7 +51,6 @@ class CrostonVariant(BaseForecaster):
         super().__init__()
         self.alpha: float | None = None
         self.beta: float | None = None
-        self._fitted_params: FittedParams | None = None
 
     def forecast(
         self,
@@ -69,15 +68,18 @@ class CrostonVariant(BaseForecaster):
     ) -> None:
         """Fit the model to the time-series."""
         if alpha is None or beta is None:
-            self._optimise_and_set_parameters(metric=metric)
+            alpha, beta = self._optimise_and_set_parameters(
+                self._ts,
+                metric=metric,
+            )
         else:
-            self.alpha = self._validate_float_within_inclusive_bounds(
+            alpha = self._validate_float_within_inclusive_bounds(
                 name="alpha",
                 value=alpha,
                 min_value=0,
                 max_value=1,
             )
-            self.beta = self._validate_float_within_inclusive_bounds(
+            beta = self._validate_float_within_inclusive_bounds(
                 name="beta",
                 value=beta,
                 min_value=0,
@@ -95,15 +97,15 @@ class CrostonVariant(BaseForecaster):
         # Computer forecast using Croston's method.
         forecast = self._compute_forecast(
             ts=ts,
-            alpha=self.alpha,
-            beta=self.beta,
+            alpha=alpha,
+            beta=beta,
             bias_correction=bias_correction,
         )
 
         # Cache results
         self._fitted_params = FittedParams(
-            alpha=self.alpha,
-            beta=self.beta,
+            alpha=alpha,
+            beta=beta,
             ts_fitted=forecast,
         )
 
@@ -152,7 +154,11 @@ class CrostonVariant(BaseForecaster):
 
         return np.insert(forecast, 0, np.nan)
 
-    def _optimise_and_set_parameters(self, metric: str = "MSE") -> None:
+    @staticmethod
+    def _optimise_and_set_parameters(
+        ts: npt.NDArray[np.float64],
+        metric: str = "MSE",
+    ) -> Tuple[float, float]:
         """Optimise the smoothing parameters alpha and beta."""
         _metric = get_metric_function(metric)
 
@@ -169,26 +175,28 @@ class CrostonVariant(BaseForecaster):
             (beta_max - beta_min) / 2,
         )
         min_err = optimize.minimize(
-            self._cost_function,
+            CrostonVariant._cost_function,
             initial_guess,
-            args=(_metric,),
+            args=(ts, _metric),
             bounds=[(alpha_min, alpha_max), (beta_min, beta_max)],
         )
-        self.alpha, self.beta = min_err.x
+        alpha, beta = min_err.x
+        return alpha, beta
 
+    @staticmethod
     def _cost_function(
-        self,
         params: tuple[float, float],
+        ts: npt.NDArray[np.float64],
         metric_function: Callable[..., float],
     ) -> float:
         """Cost function used for optimisation of alpha and beta."""
         alpha, beta = params
-        f = self._compute_forecast(
-            ts=self.get_timeseries(),
+        f = CrostonVariant._compute_forecast(
+            ts=ts,
             alpha=alpha,
             beta=beta,
         )
-        error = metric_function(self._ts, f[:-1])
+        error = metric_function(ts, f[:-1])
         return error
 
     def _get_bias_correction_value(self, beta: float) -> float:  # noqa: ARG002

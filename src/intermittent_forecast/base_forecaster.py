@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import numpy as np
 
@@ -13,12 +13,17 @@ if TYPE_CHECKING:
     import numpy.typing as npt
 
 
+class FittedParams(TypedDict):
+    """TypedDict for fitted parameters."""
+
+
 class BaseForecaster(ABC):
     """Base class for forecasting models."""
 
     def __init__(self) -> None:
         """Initialise the forecaster."""
         self._ts: npt.NDArray[np.float64] | None = None
+        self._fitted_params: FittedParams | None = None
 
     def get_timeseries(self) -> npt.NDArray[np.float64]:
         """Get the time-series."""
@@ -43,6 +48,15 @@ class BaseForecaster(ABC):
         self.set_timeseries(ts)
         self._fit(**kwargs)
         return self
+
+    def get_fitted_params(self) -> FittedParams:
+        """Get the fitted parameters."""
+        if not self._fitted_params:
+            err_msg = (
+                "Model has not been fitted yet. Call the `fit` method first."
+            )
+            raise ValueError(err_msg)
+        return self._fitted_params
 
     @abstractmethod
     def _fit(self) -> None:
