@@ -136,13 +136,14 @@ def test_croston_fit() -> None:
     """Test that the fit method calculates the correct parameter values."""
     ts = [1, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 4, 0, 5, 6]
     croston = CRO().fit(ts=ts)
+    fitted_params = croston.get_fitted_params()
     expected_alpha = 1
+    fitted_alpha = fitted_params.get("alpha")
     expected_beta = 1
-    if croston.alpha != expected_alpha:
-        error_message = (
-            f"Expected alpha: {expected_alpha}, got: {croston.alpha}"
-        )
+    fitted_beta = fitted_params.get("beta")
+    if fitted_alpha != expected_alpha:
+        error_message = f"Expected alpha: {expected_alpha}, got: {fitted_alpha}"
         raise AssertionError(error_message)
-    if croston.beta != expected_beta:
-        error_message = f"Expected beta: {expected_beta}, got: {croston.beta}"
+    if fitted_beta != expected_beta:
+        error_message = f"Expected beta: {expected_beta}, got: {fitted_beta}"
         raise AssertionError(error_message)
