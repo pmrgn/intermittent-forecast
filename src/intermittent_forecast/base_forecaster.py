@@ -46,7 +46,7 @@ class BaseForecaster(ABC):
 
     @abstractmethod
     def _fit(self) -> None:
-        """Fit the model to the time-series."""
+        """Fit the model to the time-series and cache results."""
 
     @abstractmethod
     def forecast(

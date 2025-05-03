@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, TypedDict
 
 import numpy as np
 import numpy.typing as npt
@@ -33,6 +33,14 @@ def get_metric_function(metric_name: str) -> Callable[..., float]:
         raise ValueError(error_message) from None
 
 
+class FittedParams(TypedDict):
+    """TypedDict for fitted parameters."""
+
+    alpha: float
+    beta: float
+    ts_fitted: npt.NDArray[np.float64]
+
+
 class CrostonVariant(BaseForecaster):
     """Base class for Croston variants."""
 
@@ -43,6 +51,15 @@ class CrostonVariant(BaseForecaster):
         super().__init__()
         self.alpha: float | None = None
         self.beta: float | None = None
+        self._fitted_params: FittedParams | None = None
+
+    def forecast(
+        self,
+        alpha: float | None = None,
+        beta: float | None = None,
+    ) -> npt.NDArray[np.float64]:
+        """Perform forecasting for CRO, SBA, and SBJ methods."""
+        return self._fitted_params["ts_fitted"]
 
     def _fit(
         self,
@@ -54,7 +71,6 @@ class CrostonVariant(BaseForecaster):
         if alpha is None or beta is None:
             self._optimise_and_set_parameters(metric=metric)
         else:
-            # TODO: Check code duplication
             self.alpha = self._validate_float_within_inclusive_bounds(
                 name="alpha",
                 value=alpha,
@@ -67,6 +83,74 @@ class CrostonVariant(BaseForecaster):
                 min_value=0,
                 max_value=1,
             )
+
+        # Get the time series data.
+        ts = self.get_timeseries()
+
+        if self.requires_bias_correction:
+            bias_correction = self._get_bias_correction_value(beta=beta)
+        else:
+            bias_correction = 1
+
+        # Computer forecast using Croston's method.
+        forecast = self._compute_crostons_method(
+            ts=ts,
+            alpha=self.alpha,
+            beta=self.beta,
+            bias_correction=bias_correction,
+        )
+
+        # Cache results
+        self._fitted_params = FittedParams(
+            alpha=self.alpha,
+            beta=self.beta,
+            ts_fitted=forecast,
+        )
+
+    @staticmethod
+    def _compute_crostons_method(
+        ts: npt.NDArray[np.float64],
+        alpha: float,
+        beta: float,
+        bias_correction: float = 1,
+    ) -> npt.NDArray[np.float64]:
+        """Compute Croston's method."""
+        # Perform croston's method.
+        non_zero_demand = CrostonVariant._get_nonzero_demand_array(ts)
+        p_idx = CrostonVariant._get_nonzero_demand_indices(ts)
+        p_diff = CrostonVariant._get_nonzero_demand_intervals(p_idx)
+
+        # Intialise an array for the demand.
+        z = CrostonVariant._initialise_array(
+            array_length=len(non_zero_demand),
+            initial_value=non_zero_demand[0],
+        )
+
+        # Intialise an array for the demand intervals.
+        p = CrostonVariant._initialise_array(
+            array_length=len(non_zero_demand),
+            initial_value=float(np.mean(p_diff)),
+        )
+
+        # Apply the smoothing rules to the demand and demand intervals.
+        for i in range(1, len(z)):
+            z[i] = alpha * non_zero_demand[i] + (1 - alpha) * z[i - 1]
+            p[i] = beta * p_diff[i] + (1 - beta) * p[i - 1]
+
+        # Calculate the forecast.
+        f = (z / p) * bias_correction
+
+        # Initialize forecast array
+        forecast = np.zeros(len(ts))
+        forecast[p_idx] = f
+
+        # Forward fill non-zero forecasted demand values
+        forecast = CrostonVariant.forward_fill(forecast)
+
+        # Set values before first p_idx to NaN
+        forecast[: p_idx[0]] = np.nan
+
+        return np.insert(forecast, 0, np.nan)
 
     def _optimise_and_set_parameters(self, metric: str = "MSE") -> None:
         """Optimise the smoothing parameters alpha and beta."""
@@ -99,7 +183,8 @@ class CrostonVariant(BaseForecaster):
     ) -> float:
         """Cost function used for optimisation of alpha and beta."""
         alpha, beta = params
-        f = self.forecast(
+        f = self._compute_crostons_method(
+            ts=self.get_timeseries(),
             alpha=alpha,
             beta=beta,
         )
@@ -116,80 +201,6 @@ class CrostonVariant(BaseForecaster):
             "Please implement the '_get_bias_correction_value' method."
         )
         raise NotImplementedError(err_msg)
-
-    def forecast(
-        self,
-        alpha: float | None = None,
-        beta: float | None = None,
-    ) -> npt.NDArray[np.float64]:
-        """Perform forecasting for CRO, SBA, and SBJ methods."""
-        # Get the time series data.
-        ts = self.get_timeseries()
-
-        alpha = alpha or self.alpha
-        beta = beta or self.beta
-        if alpha is None or beta is None:
-            err_msg = (
-                "Alpha and beta must be set before calling forecast, or call "
-                "the fit() method automatically select values."
-            )
-            raise ValueError(err_msg)
-
-        alpha = self._validate_float_within_inclusive_bounds(
-            name="alpha",
-            value=alpha,
-            min_value=0,
-            max_value=1,
-        )
-
-        beta = self._validate_float_within_inclusive_bounds(
-            name="beta",
-            value=beta,
-            min_value=0,
-            max_value=1,
-        )
-
-        non_zero_demand = self._get_nonzero_demand_array(ts)
-        p_idx = self._get_nonzero_demand_indices(ts)
-        p_diff = self._get_nonzero_demand_intervals(p_idx)
-
-        # Intialise an array for the demand.
-        z = self._initialise_array(
-            array_length=len(non_zero_demand),
-            initial_value=non_zero_demand[0],
-        )
-
-        # Intialise an array for the demand intervals.
-        p = self._initialise_array(
-            array_length=len(non_zero_demand),
-            initial_value=float(np.mean(p_diff)),
-        )
-
-        # Apply the smoothing rules to the demand and demand intervals.
-        for i in range(1, len(z)):
-            z[i] = alpha * non_zero_demand[i] + (1 - alpha) * z[i - 1]
-            p[i] = beta * p_diff[i] + (1 - beta) * p[i - 1]
-
-        # Calculate the forecast.
-        f = z / p
-
-        # Apply bias correction if required, e.g., for SBA and SBJ methods. For
-        # CRO, the bias correction is 1, so it does not affect the forecast.
-        if self.requires_bias_correction:
-            f *= self._get_bias_correction_value(beta)
-
-        # Initialize forecast array
-        forecast = np.zeros(len(ts))
-        forecast[p_idx] = f
-
-        # Forward fill non-zero forecasted demand values
-        forecast = self.forward_fill(forecast)
-
-        # Set values before first p_idx to NaN
-        forecast[: p_idx[0]] = np.nan
-
-        # Offset the forecast, the first value is set to NaN.
-        return np.insert(forecast, 0, np.nan)
 
     @staticmethod
     def _get_nonzero_demand_array(
