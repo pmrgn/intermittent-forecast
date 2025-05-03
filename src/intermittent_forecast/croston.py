@@ -93,7 +93,7 @@ class CrostonVariant(BaseForecaster):
             bias_correction = 1
 
         # Computer forecast using Croston's method.
-        forecast = self._compute_crostons_method(
+        forecast = self._compute_forecast(
             ts=ts,
             alpha=self.alpha,
             beta=self.beta,
@@ -108,7 +108,7 @@ class CrostonVariant(BaseForecaster):
         )
 
     @staticmethod
-    def _compute_crostons_method(
+    def _compute_forecast(
         ts: npt.NDArray[np.float64],
         alpha: float,
         beta: float,
@@ -183,7 +183,7 @@ class CrostonVariant(BaseForecaster):
     ) -> float:
         """Cost function used for optimisation of alpha and beta."""
         alpha, beta = params
-        f = self._compute_crostons_method(
+        f = self._compute_forecast(
             ts=self.get_timeseries(),
             alpha=alpha,
             beta=beta,
@@ -270,17 +270,16 @@ class SBJ(CrostonVariant):
 class TSB(CrostonVariant):
     """TSB variant of Croston's method."""
 
-    def forecast(
-        self,
+    @staticmethod
+    def _compute_forecast(
+        ts: npt.NDArray[np.float64],
         alpha: float | None = None,
         beta: float | None = None,
+        bias_correction: float = 1,
     ) -> npt.NDArray[np.float64]:
         """Perform forecasting using TSB method."""
-        # Get the time series data.
-        ts = self.get_timeseries()
-
-        alpha = alpha or self.alpha
-        beta = beta or self.beta
+        alpha = alpha or TSB.alpha
+        beta = beta or TSB.beta
         if alpha is None or beta is None:
             err_msg = (
                 "Alpha and beta must be set before calling forecast, or call"
@@ -288,27 +287,27 @@ class TSB(CrostonVariant):
             )
             raise ValueError(err_msg)
 
-        alpha = self._validate_float_within_inclusive_bounds(
+        alpha = TSB._validate_float_within_inclusive_bounds(
             name="alpha",
             value=alpha,
             min_value=0,
             max_value=1,
         )
 
-        beta = self._validate_float_within_inclusive_bounds(
+        beta = TSB._validate_float_within_inclusive_bounds(
             name="beta",
             value=beta,
             min_value=0,
             max_value=1,
         )
         n = len(ts)
-        p_idx = self._get_nonzero_demand_indices(ts)
-        z = self._initialise_array(
+        p_idx = TSB._get_nonzero_demand_indices(ts)
+        z = TSB._initialise_array(
             array_length=n,
             initial_value=ts[p_idx[0]],
         )
 
-        p = self._initialise_array(
+        p = TSB._initialise_array(
             array_length=n,
             initial_value=len(p_idx) / n,
         )
@@ -322,7 +321,7 @@ class TSB(CrostonVariant):
                 z[i] = z[i - 1]
                 p[i] = (1 - beta) * p[i - 1]
 
-        forecast = p * z
+        forecast = (p * z) * bias_correction
 
         # Offset the forecast to match the original time series.
         return np.insert(forecast, 0, np.nan)
