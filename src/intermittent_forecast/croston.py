@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Tuple, TypedDict
+from typing import Callable, TypedDict
 
 import numpy as np
 import numpy.typing as npt
@@ -46,19 +46,15 @@ class CrostonVariant(BaseForecaster):
 
     requires_bias_correction = False
 
-    def __init__(self) -> None:
-        """Initialise the Croston variant."""
-        super().__init__()
-        self.alpha: float | None = None
-        self.beta: float | None = None
-
     def forecast(
         self,
-        alpha: float | None = None,
-        beta: float | None = None,
     ) -> npt.NDArray[np.float64]:
         """Perform forecasting for CRO, SBA, and SBJ methods."""
-        return self._fitted_params["ts_fitted"]
+        if not isinstance(self._fitted_params, dict):
+            err_msg = "Model has not been fitted yet."
+            raise TypeError(err_msg)
+
+        return self._fitted_params.get("ts_fitted")
 
     def _fit(
         self,
@@ -69,7 +65,7 @@ class CrostonVariant(BaseForecaster):
         """Fit the model to the time-series."""
         if alpha is None or beta is None:
             alpha, beta = self._optimise_and_set_parameters(
-                self._ts,
+                self.get_timeseries(),
                 metric=metric,
             )
         else:
@@ -94,7 +90,7 @@ class CrostonVariant(BaseForecaster):
         else:
             bias_correction = 1
 
-        # Computer forecast using Croston's method.
+        # Compute forecast using Croston's method.
         forecast = self._compute_forecast(
             ts=ts,
             alpha=alpha,
@@ -158,15 +154,13 @@ class CrostonVariant(BaseForecaster):
     def _optimise_and_set_parameters(
         ts: npt.NDArray[np.float64],
         metric: str = "MSE",
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Optimise the smoothing parameters alpha and beta."""
         _metric = get_metric_function(metric)
 
         # Set the bounds for alpha and beta.
-        alpha_min = 0
-        alpha_max = 1
-        beta_min = 0
-        beta_max = 1
+        alpha_min, alpha_max = (0, 1)
+        beta_min, beta_max = (0, 1)
 
         # Set the initial guess as the midpoint of the bounds for alpha and
         # beta.
@@ -196,8 +190,7 @@ class CrostonVariant(BaseForecaster):
             alpha=alpha,
             beta=beta,
         )
-        error = metric_function(ts, f[:-1])
-        return error
+        return metric_function(ts, f[:-1])
 
     def _get_bias_correction_value(self, beta: float) -> float:  # noqa: ARG002
         """Return the bias correction value, if applicable."""
@@ -248,7 +241,7 @@ class CrostonVariant(BaseForecaster):
         valid = np.where(mask, arr, 0)
         idx = np.where(mask, np.arange(len(arr)), 0)
         np.maximum.accumulate(idx, out=idx)
-        return valid[idx]
+        return np.asarray(valid[idx], dtype=np.float64)
 
 
 class CRO(CrostonVariant):
@@ -281,33 +274,11 @@ class TSB(CrostonVariant):
     @staticmethod
     def _compute_forecast(
         ts: npt.NDArray[np.float64],
-        alpha: float | None = None,
-        beta: float | None = None,
+        alpha: float,
+        beta: float,
         bias_correction: float = 1,
     ) -> npt.NDArray[np.float64]:
         """Perform forecasting using TSB method."""
-        alpha = alpha or TSB.alpha
-        beta = beta or TSB.beta
-        if alpha is None or beta is None:
-            err_msg = (
-                "Alpha and beta must be set before calling forecast, or call"
-                "the fit() method automatically select values."
-            )
-            raise ValueError(err_msg)
-
-        alpha = TSB._validate_float_within_inclusive_bounds(
-            name="alpha",
-            value=alpha,
-            min_value=0,
-            max_value=1,
-        )
-
-        beta = TSB._validate_float_within_inclusive_bounds(
-            name="beta",
-            value=beta,
-            min_value=0,
-            max_value=1,
-        )
         n = len(ts)
         p_idx = TSB._get_nonzero_demand_indices(ts)
         z = TSB._initialise_array(
@@ -331,5 +302,5 @@ class TSB(CrostonVariant):
 
         forecast = (p * z) * bias_correction
 
-        # Offset the forecast to match the original time series.
+        # Offset the forecast by 1
         return np.insert(forecast, 0, np.nan)
