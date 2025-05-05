@@ -8,7 +8,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy import optimize
 
-from intermittent_forecast import error_metrics
+from intermittent_forecast import error_metrics, utils
 from intermittent_forecast.base_forecaster import BaseForecaster
 
 # Define the mapping dictionary for error metric functions
@@ -48,13 +48,25 @@ class CrostonVariant(BaseForecaster):
 
     def forecast(
         self,
+        start: int,
+        end: int,
     ) -> npt.NDArray[np.float64]:
-        """Perform forecasting for CRO, SBA, and SBJ methods."""
+        """Forecast the time series using the fitted parameters."""
         if not isinstance(self._fitted_params, dict):
             err_msg = "Model has not been fitted yet."
             raise TypeError(err_msg)
 
-        return self._fitted_params.get("ts_fitted")
+        start = utils.validate_non_negative_integer(start, name="start")
+        end = utils.validate_positive_integer(end, name="end")
+        forecast = self._fitted_params.get("ts_fitted")
+
+        if len(forecast) < end:
+            # Append with the out of sample forecast
+            forecast = np.concatenate(
+                (forecast, np.full(end - len(forecast), forecast[-1])),
+            )
+
+        return forecast[start:end]
 
     def _fit(
         self,
