@@ -85,3 +85,19 @@ def validate_positive_integer(
         raise ValueError(err_msg)
 
     return value
+
+
+def validate_non_negative_integer(
+    value: int,
+    name: str,
+) -> int:
+    """Validate the value is a non-negative integer."""
+    if not isinstance(value, int):
+        err_msg = f"{name} must be an integer."
+        raise TypeError(err_msg)
+
+    if value < 0:
+        err_msg = f"{name} must be 0 or greater."
+        raise ValueError(err_msg)
+
+    return value

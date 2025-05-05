@@ -65,6 +65,8 @@ class BaseForecaster(ABC):
     @abstractmethod
     def forecast(
         self,
+        start: int,
+        end: int,
     ) -> npt.NDArray[np.float64]:
         """Returns the forecast."""
 

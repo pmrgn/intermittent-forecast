@@ -34,7 +34,11 @@ def test_single_value_series() -> None:
 
 def test_croston_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the CRO class."""
-    forecast = CRO().fit(ts=basic_time_series, alpha=0.5, beta=0.2).forecast()
+    forecast = (
+        CRO()
+        .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
+        .forecast(start=0, end=len(basic_time_series) + 1)
+    )
     expected = np.array(
         [
             np.nan,
@@ -59,7 +63,11 @@ def test_croston_forecast(basic_time_series: list[float]) -> None:
 
 def test_sba_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the SBA class."""
-    forecast = SBA().fit(ts=basic_time_series, alpha=0.5, beta=0.2).forecast()
+    forecast = (
+        SBA()
+        .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
+        .forecast(start=0, end=len(basic_time_series) + 1)
+    )
     expected = np.array(
         [
             np.nan,
@@ -84,7 +92,11 @@ def test_sba_forecast(basic_time_series: list[float]) -> None:
 
 def test_sbj_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the SBJ class."""
-    forecast = SBJ().fit(ts=basic_time_series, alpha=0.5, beta=0.2).forecast()
+    forecast = (
+        SBJ()
+        .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
+        .forecast(start=0, end=len(basic_time_series) + 1)
+    )
     expected = np.array(
         [
             np.nan,
@@ -109,7 +121,11 @@ def test_sbj_forecast(basic_time_series: list[float]) -> None:
 
 def test_tsb_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the TSB class."""
-    forecast = TSB().fit(ts=basic_time_series, alpha=0.3, beta=0.1).forecast()
+    forecast = (
+        TSB()
+        .fit(ts=basic_time_series, alpha=0.3, beta=0.1)
+        .forecast(start=0, end=len(basic_time_series) + 2)
+    )
     expected = np.array(
         [
             np.nan,
@@ -122,6 +138,7 @@ def test_tsb_forecast(basic_time_series: list[float]) -> None:
             1.0099396,
             0.9089456,
             1.0123723,
+            0.9111351,
             0.9111351,
         ],
     )

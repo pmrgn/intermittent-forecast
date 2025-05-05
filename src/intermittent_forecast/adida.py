@@ -77,7 +77,8 @@ class ADIDA:
 
     def forecast(
         self,
-        **kwargs: Any,  # noqa: ANN401
+        start: int,
+        end: int,
     ) -> npt.NDArray[np.float64]:
         """Forecast the time series using the ADIDA method.
 
@@ -87,10 +88,17 @@ class ADIDA:
             Forecasted values.
 
         """
+        start = utils.validate_non_negative_integer(start, name="start")
+        end = utils.validate_positive_integer(end, name="end")
+        # Calculate the number of steps to forecast for the aggregated model.
+        base_steps = end - len(self._base_ts)
+        agg_steps = self._aggregation_period // base_steps
         self._aggregated_forecast = self._aggregated_model.forecast(
-            **kwargs,
+            start=0,
+            end=len(self._base_ts) + agg_steps,
         )
-        return self._disaggregate()
+        forecast = self._disaggregate()
+        return forecast[start:end]
 
     def _aggregate(
         self,
