@@ -8,29 +8,30 @@ import numpy as np
 import numpy.typing as npt
 from scipy import optimize
 
-from intermittent_forecast import error_metrics, utils
+from intermittent_forecast import utils
 from intermittent_forecast.base_forecaster import BaseForecaster
+from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 # Define the mapping dictionary for error metric functions
-METRIC_FUNCTIONS = {
-    "MAE": error_metrics.mae,
-    "MSE": error_metrics.mse,
-    "MAR": error_metrics.mar,
-    "MSR": error_metrics.msr,
-    "PIS": error_metrics.pis,
-}
+# METRIC_FUNCTIONS = {
+#     "MAE": error_metrics.mae,
+#     "MSE": error_metrics.mse,
+#     "MAR": error_metrics.mar,
+#     "MSR": error_metrics.msr,
+#     "PIS": error_metrics.pis,
+# }
 
 
-def get_metric_function(metric_name: str) -> Callable[..., float]:
-    """Retrieve a metric function by its name."""
-    try:
-        return METRIC_FUNCTIONS[metric_name.upper()]
-    except KeyError:
-        error_message = (
-            f"Unknown metric '{metric_name}'. Available options: "
-            f"{list(METRIC_FUNCTIONS.keys())}"
-        )
-        raise ValueError(error_message) from None
+# def get_metric_function(metric_name: str) -> Callable[..., float]:
+#     """Retrieve a metric function by its name."""
+#     try:
+#         return METRIC_FUNCTIONS[metric_name.upper()]
+#     except KeyError:
+#         error_message = (
+#             f"Unknown metric '{metric_name}'. Available options: "
+#             f"{list(METRIC_FUNCTIONS.keys())}"
+#         )
+#         raise ValueError(error_message) from None
 
 
 class FittedParams(TypedDict):
@@ -168,7 +169,7 @@ class CrostonVariant(BaseForecaster):
         metric: str = "MSE",
     ) -> tuple[float, float]:
         """Optimise the smoothing parameters alpha and beta."""
-        _metric = get_metric_function(metric)
+        error_metric_func = ErrorMetricRegistry.get(metric)
 
         # Set the bounds for alpha and beta.
         alpha_min, alpha_max = (0, 1)
@@ -183,7 +184,7 @@ class CrostonVariant(BaseForecaster):
         min_err = optimize.minimize(
             CrostonVariant._cost_function,
             initial_guess,
-            args=(ts, _metric),
+            args=(ts, error_metric_func),
             bounds=[(alpha_min, alpha_max), (beta_min, beta_max)],
         )
         alpha, beta = min_err.x
@@ -193,7 +194,7 @@ class CrostonVariant(BaseForecaster):
     def _cost_function(
         params: tuple[float, float],
         ts: npt.NDArray[np.float64],
-        metric_function: Callable[..., float],
+        error_metric_func: Callable[..., float],
     ) -> float:
         """Cost function used for optimisation of alpha and beta."""
         alpha, beta = params
@@ -202,7 +203,7 @@ class CrostonVariant(BaseForecaster):
             alpha=alpha,
             beta=beta,
         )
-        return metric_function(ts, f[:-1])
+        return error_metric_func(ts, f[:-1])
 
     def _get_bias_correction_value(self, beta: float) -> float:  # noqa: ARG002
         """Return the bias correction value, if applicable."""
