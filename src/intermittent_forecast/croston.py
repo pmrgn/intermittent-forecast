@@ -12,27 +12,6 @@ from intermittent_forecast import utils
 from intermittent_forecast.base_forecaster import BaseForecaster
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
-# Define the mapping dictionary for error metric functions
-# METRIC_FUNCTIONS = {
-#     "MAE": error_metrics.mae,
-#     "MSE": error_metrics.mse,
-#     "MAR": error_metrics.mar,
-#     "MSR": error_metrics.msr,
-#     "PIS": error_metrics.pis,
-# }
-
-
-# def get_metric_function(metric_name: str) -> Callable[..., float]:
-#     """Retrieve a metric function by its name."""
-#     try:
-#         return METRIC_FUNCTIONS[metric_name.upper()]
-#     except KeyError:
-#         error_message = (
-#             f"Unknown metric '{metric_name}'. Available options: "
-#             f"{list(METRIC_FUNCTIONS.keys())}"
-#         )
-#         raise ValueError(error_message) from None
-
 
 class FittedParams(TypedDict):
     """TypedDict for fitted parameters."""

@@ -19,7 +19,7 @@ def test_all_zero_series() -> None:
         ValueError,
         match="at least two non-zero values",
     ):
-        CRO().fit(ts=ts)
+        CRO().optimise_parameters(ts=ts)
 
 
 def test_single_value_series() -> None:
@@ -29,14 +29,14 @@ def test_single_value_series() -> None:
         ValueError,
         match="at least two non-zero values",
     ):
-        CRO().fit(ts=ts)
+        CRO().optimise_parameters(ts=ts)
 
 
 def test_croston_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the CRO class."""
     forecast = (
         CRO()
-        .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
+        .optimise_parameters(ts=basic_time_series, alpha=0.5, beta=0.2)
         .forecast(start=0, end=len(basic_time_series) + 1)
     )
     expected = np.array(
@@ -65,7 +65,7 @@ def test_sba_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the SBA class."""
     forecast = (
         SBA()
-        .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
+        .optimise_parameters(ts=basic_time_series, alpha=0.5, beta=0.2)
         .forecast(start=0, end=len(basic_time_series) + 1)
     )
     expected = np.array(
@@ -94,7 +94,7 @@ def test_sbj_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the SBJ class."""
     forecast = (
         SBJ()
-        .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
+        .optimise_parameters(ts=basic_time_series, alpha=0.5, beta=0.2)
         .forecast(start=0, end=len(basic_time_series) + 1)
     )
     expected = np.array(
@@ -123,7 +123,7 @@ def test_tsb_forecast(basic_time_series: list[float]) -> None:
     """Test the forecast method of the TSB class."""
     forecast = (
         TSB()
-        .fit(ts=basic_time_series, alpha=0.3, beta=0.1)
+        .optimise_parameters(ts=basic_time_series, alpha=0.3, beta=0.1)
         .forecast(start=0, end=len(basic_time_series) + 2)
     )
     expected = np.array(
@@ -152,7 +152,7 @@ def test_tsb_forecast(basic_time_series: list[float]) -> None:
 def test_croston_fit() -> None:
     """Test that the fit method calculates the correct parameter values."""
     ts = [1, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 4, 0, 5, 6]
-    croston = CRO().fit(ts=ts)
+    croston = CRO().optimise_parameters(ts=ts)
     fitted_params = croston.get_fitted_params()
     expected_alpha = 1
     fitted_alpha = fitted_params.get("alpha")
