@@ -1,12 +1,13 @@
 """Exponential Smoothing for Time Series Forecasting."""
 
-import operator
-from typing import TypedDict
+from typing import TypedDict, Callable
 
 import numpy as np
 import numpy.typing as npt
 
 from intermittent_forecast.base_forecaster import BaseForecaster
+from intermittent_forecast.error_metrics import ErrorMetricRegistry
+from scipy import optimize
 
 
 class FittedParams(TypedDict):
@@ -37,7 +38,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         gamma: float | None = None,
     ) -> None:
         lvl_final, trend_final, seasonal_final, ts_fitted = (
-            TripleExponentialSmoothing.compute_exponential_smoothing(
+            TripleExponentialSmoothing.calc_exp_smoothing(
                 alpha=alpha,
                 beta=beta,
                 gamma=gamma,
@@ -127,7 +128,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         return ts_fitted[start:end]
 
     @staticmethod
-    def compute_exponential_smoothing(
+    def calc_exp_smoothing(
         alpha: int,
         beta: int,
         gamma: int,
@@ -146,7 +147,10 @@ class TripleExponentialSmoothing(BaseForecaster):
             case "mul", "mul":
                 model = TripleExponentialSmoothing._tes_mul_mul
             case _:
-                err_msg = f"Invalid combination of trend_type and seasonal_type: {trend_type}, {seasonal_type}"
+                err_msg = (
+                    f"Invalid combination of trend_type and seasonal_type: "
+                    f"{trend_type}, {seasonal_type}"
+                )
                 raise ValueError(err_msg)
 
         return model(
@@ -299,34 +303,67 @@ class TripleExponentialSmoothing(BaseForecaster):
             s[:m] = ts[:m] / lvl[0]
         return lvl, b, s
 
-    def _opt(self, *args) -> float:
+    @staticmethod
+    def _get_optimised_parameters(
+        ts: npt.NDArray[np.float64],
+        metric: str,
+        period: int,
+        trend_type: str,
+        seasonal_type: str,
+    ) -> tuple[float, float, float]:
         """Return squared error between timeseries and smoothed array"""
-        *_, smooth = self._model(*args)
-        return np.sum((smooth - self.ts) ** 2)
+        error_metric_func = ErrorMetricRegistry.get(metric)
+        # TODO: Change to alpha_bnds, store as tuple. Same for Crostons.
+        # Set the bounds for alpha and beta.
+        alpha_min, alpha_max = (0, 1)
+        beta_min, beta_max = (0, 1)
+        gamma_min, gamma_max = (0, 1)
 
-    def optimise_params(self):
-        """Find optimal values for the smoothing factors"""
-        lvl, b, s = self.initialise_arrays()
-        alpha_init = 0.5 / self.period
-        beta_init = 0.1 * alpha_init
-        gamma_init = 0.05 * (1 - alpha_init)
-        params = [alpha_init, beta_init, gamma_init]
-        bounds = [(0, 0.5), (0, 0.5), (0, 0.5)]
-        args = (lvl, b, s)
-        optimised = minimize(self._opt, params, args=args, bounds=bounds)
-        self.opt_params = optimised.x
+        # Set the initial guess as the midpoint of the bounds for alpha and
+        # beta.
+        initial_guess = (
+            (alpha_max - alpha_min) / 2,
+            (beta_max - beta_min) / 2,
+            (gamma_max - gamma_min) / 2,
+        )
+        min_err = optimize.minimize(
+            TripleExponentialSmoothing._cost_function,
+            initial_guess,
+            args=(
+                ts,
+                error_metric_func,
+                period,
+                trend_type,
+                seasonal_type,
+            ),
+            bounds=[
+                (alpha_min, alpha_max),
+                (beta_min, beta_max),
+                (gamma_min, gamma_max),
+            ],
+        )
+        alpha, beta, gamma = min_err.x
 
+        return alpha, beta, gamma
 
-if __name__ == "__main__":
-    ts = [26, 28, 35, 36, 31, 33, 37, 40, 35, 39, 42, 43]
-    tes = TripleExponentialSmoothing().fit(
-        ts=ts,
-        trend_type="add",
-        seasonal_type="mul",
-        period=4,
-        alpha=0.3,
-        beta=0.2,
-        gamma=0.1,
-    )
-    fc = tes.forecast(start=0, end=16)
-    print(fc)
+    @staticmethod
+    def _cost_function(
+        params: tuple[float, float, float],
+        ts: npt.NDArray[np.float64],
+        error_metric_func: Callable[..., float],
+        period: int,
+        trend_type: str,
+        seasonal_type: str,
+    ) -> float:
+        """Cost function used for optimisation of alpha and beta."""
+        alpha, beta, gamma = params
+        *_, ts_fitted = TripleExponentialSmoothing.calc_exp_smoothing(
+            ts=ts,
+            alpha=alpha,
+            beta=beta,
+            gamma=gamma,
+            period=period,
+            trend_type=trend_type,
+            seasonal_type=seasonal_type,
+        )
+        return error_metric_func(ts, ts_fitted)
