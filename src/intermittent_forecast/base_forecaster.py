@@ -39,9 +39,9 @@ class BaseForecaster(ABC):
         """Set the time-series."""
         self._ts = utils.validate_time_series(ts)
 
-    def optimise_parameters(
+    def fit(
         self,
-        ts: npt.NDArray[np.float64],
+        ts: npt.NDArray[np.float64] | list[float | int],
         **kwargs: Any,  # noqa: ANN401
     ) -> BaseForecaster:
         """Fit the model to the time-series."""

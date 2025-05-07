@@ -78,7 +78,7 @@ class ADIDA:
         # Aggregate the time series
         aggregated_ts = self._aggregate(ts)
 
-        self._aggregated_model.optimise_parameters(
+        self._aggregated_model.fit(
             ts=aggregated_ts,
             **kwargs,
         )
