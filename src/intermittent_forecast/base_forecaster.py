@@ -41,7 +41,7 @@ class BaseForecaster(ABC):
 
     def fit(
         self,
-        ts: npt.NDArray[np.float64],
+        ts: npt.NDArray[np.float64] | list[float | int],
         **kwargs: Any,  # noqa: ANN401
     ) -> BaseForecaster:
         """Fit the model to the time-series."""

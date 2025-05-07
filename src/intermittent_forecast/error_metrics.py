@@ -7,7 +7,6 @@ import numpy.typing as npt
 
 from intermittent_forecast import utils
 
-# Define the function type for metrics
 ErrorMetricFunc = Callable[
     [npt.NDArray[np.float64], npt.NDArray[np.float64]],
     float,
