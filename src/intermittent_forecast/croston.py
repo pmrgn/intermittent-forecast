@@ -56,7 +56,7 @@ class CrostonVariant(BaseForecaster):
     ) -> None:
         """Fit the model to the time-series."""
         if alpha is None or beta is None:
-            alpha, beta = self._optimise_and_set_parameters(
+            alpha, beta = self._get_optimised_parameters(
                 self.get_timeseries(),
                 metric=metric,
             )
@@ -143,7 +143,7 @@ class CrostonVariant(BaseForecaster):
         return np.insert(forecast, 0, np.nan)
 
     @staticmethod
-    def _optimise_and_set_parameters(
+    def _get_optimised_parameters(
         ts: npt.NDArray[np.float64],
         metric: str = "MSE",
     ) -> tuple[float, float]:
