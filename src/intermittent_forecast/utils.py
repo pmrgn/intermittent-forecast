@@ -11,18 +11,18 @@ if TYPE_CHECKING:
     from enum import Enum
 
 
-def get_enum_from_str(
-    mode_str: str,
+def get_enum_member_from_str(
+    member_str: str,
     enum_class: type[Enum],
-    mode_name: str,
+    member_name: str,
 ) -> Enum:
     """Convert a string to an enum value."""
     try:
-        return enum_class(mode_str.lower())
+        return enum_class(member_str.lower())
     except ValueError:
         expected = [m.value for m in enum_class]
         err_msg = (
-            f"Unknown {mode_name} mode: '{mode_str}'. "
+            f"Unknown {member_name} member: '{member_str}'. "
             f"Expected one of: {expected}",
         )
         raise ValueError(err_msg) from None

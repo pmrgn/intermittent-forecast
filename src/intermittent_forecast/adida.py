@@ -54,15 +54,15 @@ class ADIDA:
         self._base_ts: npt.NDArray[np.float64] | None = None
         self._aggregated_model = deepcopy(model)
         self._aggregation_period = aggregation_period
-        self._aggregation_mode = utils.get_enum_from_str(
-            mode_str=aggregation_mode,
+        self._aggregation_mode = utils.get_enum_member_from_str(
+            member_str=aggregation_mode,
             enum_class=AggregationMode,
-            mode_name="aggregation_mode",
+            member_name="aggregation_mode",
         )
-        self._disaggregation_mode = utils.get_enum_from_str(
-            mode_str=disaggregation_mode,
+        self._disaggregation_mode = utils.get_enum_member_from_str(
+            member_str=disaggregation_mode,
             enum_class=DisaggregationMode,
-            mode_name="disaggregation_mode",
+            member_name="disaggregation_mode",
         )
         self._temporal_weights: npt.NDArray[np.float64] | None = None
 
