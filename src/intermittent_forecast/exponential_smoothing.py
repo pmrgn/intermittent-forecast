@@ -76,9 +76,8 @@ class TripleExponentialSmoothing(BaseForecaster):
         trend_final = fitted_params.get("trend_final")
         seasonal_final = fitted_params.get("seasonal_final")
         ts_fitted = fitted_params.get("ts_fitted")
-
         # Determine the forecast horizon
-        h = end - len(self.get_timeseries())
+        h = end - len(self.get_timeseries()) + 1
         if h >= 1:
             match trend_type, seasonal_type:
                 case "add", "add":
@@ -86,16 +85,14 @@ class TripleExponentialSmoothing(BaseForecaster):
                         [
                             lvl_final
                             + i * trend_final
-                            + seasonal_final[-(-i % period) - 1]
+                            + seasonal_final[(i % period) - 1]
                             for i in range(1, h + 1)
                         ],
                     )
                 case "add", "mul":
                     forecast = np.array(
                         [
-                            lvl_final
-                            + i
-                            * trend_final
+                            (lvl_final + i * trend_final)
                             * seasonal_final[-(-i % period) - 1]
                             for i in range(1, h + 1)
                         ],
@@ -125,7 +122,7 @@ class TripleExponentialSmoothing(BaseForecaster):
                     raise ValueError(err_msg)
             ts_fitted = np.concatenate((ts_fitted, forecast))
 
-        return ts_fitted[start:end]
+        return ts_fitted[start : end + 1]
 
     @staticmethod
     def calc_exp_smoothing(
@@ -158,8 +155,6 @@ class TripleExponentialSmoothing(BaseForecaster):
             alpha=alpha,
             beta=beta,
             gamma=gamma,
-            trend_type=trend_type,
-            seasonal_type=seasonal_type,
             period=period,
         )
 
@@ -169,15 +164,13 @@ class TripleExponentialSmoothing(BaseForecaster):
         alpha: float,
         beta: float,
         gamma: float,
-        trend_type: str,
-        seasonal_type: str,
         period: int,
     ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
-            ts,
-            period,
-            trend_type,
-            seasonal_type,
+            ts=ts,
+            period=period,
+            trend_type="add",
+            seasonal_type="add",
         )
         for i in range(1, len(lvl)):
             lvl[i] = alpha * (ts[i - 1] - s[i - 1]) + (1 - alpha) * (
@@ -185,7 +178,7 @@ class TripleExponentialSmoothing(BaseForecaster):
             )
             b[i] = beta * (lvl[i] - lvl[i - 1]) + (1 - beta) * b[i - 1]
             s[i + period - 1] = (
-                gamma * (ts[i - 1] - lvl[i - 1] - b[i - 1])
+                gamma * (ts[i - 1] - (lvl[i - 1] + b[i - 1]))
                 + (1 - gamma) * s[i - 1]
             )
         ts_fitted = lvl[:-1] + b[:-1] + s[:-period]
@@ -197,15 +190,13 @@ class TripleExponentialSmoothing(BaseForecaster):
         alpha: float,
         beta: float,
         gamma: float,
-        trend_type: str,
-        seasonal_type: str,
         period: int,
     ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
-            ts,
-            period,
-            trend_type,
-            seasonal_type,
+            ts=ts,
+            period=period,
+            trend_type="add",
+            seasonal_type="mul",
         )
         for i in range(1, len(lvl)):
             lvl[i] = alpha * (ts[i - 1] / s[i - 1]) + (1 - alpha) * (
@@ -213,7 +204,7 @@ class TripleExponentialSmoothing(BaseForecaster):
             )
             b[i] = beta * (lvl[i] - lvl[i - 1]) + (1 - beta) * b[i - 1]
             s[i + period - 1] = (
-                gamma * (ts[i - 1] / (lvl[i - 1] - b[i - 1]))
+                gamma * (ts[i - 1] / (lvl[i - 1] + b[i - 1]))
                 + (1 - gamma) * s[i - 1]
             )
         ts_fitted = (lvl[:-1] + b[:-1]) * s[:-period]
@@ -225,15 +216,13 @@ class TripleExponentialSmoothing(BaseForecaster):
         alpha: float,
         beta: float,
         gamma: float,
-        trend_type: str,
-        seasonal_type: str,
         period: int,
     ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
-            ts,
-            period,
-            trend_type,
-            seasonal_type,
+            ts=ts,
+            period=period,
+            trend_type="mul",
+            seasonal_type="add",
         )
 
         for i in range(1, len(lvl)):
@@ -254,15 +243,13 @@ class TripleExponentialSmoothing(BaseForecaster):
         alpha: float,
         beta: float,
         gamma: float,
-        trend_type: str,
-        seasonal_type: str,
         period: int,
     ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
-            ts,
-            period,
-            trend_type,
-            seasonal_type,
+            ts=ts,
+            period=period,
+            trend_type="mul",
+            seasonal_type="mul",
         )
         for i in range(1, len(lvl)):
             lvl[i] = alpha * (ts[i - 1] / s[i - 1]) + (1 - alpha) * (
@@ -301,6 +288,7 @@ class TripleExponentialSmoothing(BaseForecaster):
             s[:m] = ts[:m] - lvl[0]
         if seasonal_type == "mul":
             s[:m] = ts[:m] / lvl[0]
+
         return lvl, b, s
 
     @staticmethod
