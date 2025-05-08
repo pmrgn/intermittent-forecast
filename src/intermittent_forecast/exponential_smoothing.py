@@ -10,7 +10,7 @@ from intermittent_forecast.base_forecaster import BaseForecaster
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
-class FittedParams(TypedDict):
+class FittedValues(TypedDict):
     """TypedDict for fitted parameters."""
 
     alpha: float
@@ -96,7 +96,7 @@ class TripleExponentialSmoothing(BaseForecaster):
                 seasonal_type=seasonal_type,
             )
         )
-        self._fitted_params = FittedParams(
+        self._fitted_params = FittedValues(
             alpha=alpha,
             beta=beta,
             gamma=gamma,
@@ -111,7 +111,7 @@ class TripleExponentialSmoothing(BaseForecaster):
 
     def get_fitted_params(
         self,
-    ) -> FittedParams:
+    ) -> FittedValues:
         """Get the fitted parameters."""
         if not self._fitted_params:
             err_msg = (
@@ -122,7 +122,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         if not isinstance(self._fitted_params, dict):
             err_msg = (
                 "Fitted parameters are not of the expected type. ",
-                f"Expected {FittedParams}, got {type(self._fitted_params)}.",
+                f"Expected {FittedValues}, got {type(self._fitted_params)}.",
             )
             raise TypeError(err_msg)
 
