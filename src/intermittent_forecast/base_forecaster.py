@@ -20,6 +20,8 @@ class FittedParams(TypedDict):
 class BaseForecaster(ABC):
     """Base class for forecasting models."""
 
+    fitted_params_signature = FittedParams
+
     def __init__(self) -> None:
         """Initialise the forecaster."""
         self._ts: npt.NDArray[np.float64] | None = None
@@ -49,13 +51,16 @@ class BaseForecaster(ABC):
         self._fit(**kwargs)
         return self
 
-    def get_fitted_params(self) -> FittedParams:
+    def get_fitted_params(
+        self,
+    ) -> FittedParams:
         """Get the fitted parameters."""
         if not self._fitted_params:
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )
             raise ValueError(err_msg)
+
         return self._fitted_params
 
     @abstractmethod

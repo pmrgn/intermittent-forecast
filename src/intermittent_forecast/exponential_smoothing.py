@@ -1,13 +1,13 @@
 """Exponential Smoothing for Time Series Forecasting."""
 
-from typing import TypedDict, Callable
+from typing import Callable, TypedDict
 
 import numpy as np
 import numpy.typing as npt
+from scipy import optimize
 
 from intermittent_forecast.base_forecaster import BaseForecaster
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
-from scipy import optimize
 
 
 class FittedParams(TypedDict):
@@ -27,6 +27,54 @@ class FittedParams(TypedDict):
 
 class TripleExponentialSmoothing(BaseForecaster):
     """Triple Exponential Smoothing."""
+
+    def forecast(
+        self,
+        start: int,
+        end: int,
+    ) -> npt.NDArray[np.float64]:
+        """Forecast the time series using the fitted parameters."""
+        # Unpack the fitted values
+        fitted_params = self.get_fitted_params()
+        trend_type = fitted_params["trend_type"]
+        seasonal_type = fitted_params["seasonal_type"]
+        period = fitted_params["period"]
+        lvl_final = fitted_params["lvl_final"]
+        trend_final = fitted_params["trend_final"]
+        seasonal_final = fitted_params["seasonal_final"]
+        ts_fitted = fitted_params["ts_fitted"]
+
+        # Determine the forecasting horizon if required
+        h = end - len(self.get_timeseries()) + 1
+        if h > 0:
+            # Define trend functions
+            trend_funcs = {
+                "add": lambda lvl, trd, i: lvl + i * trd,
+                "mul": lambda lvl, trd, i: lvl * (trd**i),
+            }
+
+            # Define seasonal combination functions
+            seasonal_combine = {
+                "add": lambda val, seas: val + seas,
+                "mul": lambda val, seas: val * seas,
+            }
+
+            # Get the correct functions based on types
+            apply_trend = trend_funcs[trend_type]
+            apply_seasonal = seasonal_combine[seasonal_type]
+
+            # Generate forecast
+            forecast = [
+                apply_seasonal(
+                    apply_trend(lvl_final, trend_final, i),
+                    seasonal_final[(i - 1) % period],
+                )
+                for i in range(1, h + 1)
+            ]
+
+            ts_fitted = np.concatenate((ts_fitted, np.array(forecast)))
+
+        return ts_fitted[start : end + 1]
 
     def _fit(
         self,
@@ -61,68 +109,24 @@ class TripleExponentialSmoothing(BaseForecaster):
             seasonal_final=seasonal_final,
         )
 
-    def forecast(
+    def get_fitted_params(
         self,
-        start: int,
-        end: int,
-    ) -> npt.NDArray[np.float64]:
-        """Forecast the time series using the fitted parameters."""
-        # Get the fitted parameters
-        fitted_params = self.get_fitted_params()
-        trend_type = fitted_params.get("trend_type")
-        seasonal_type = fitted_params.get("seasonal_type")
-        period = fitted_params.get("period")
-        lvl_final = fitted_params.get("lvl_final")
-        trend_final = fitted_params.get("trend_final")
-        seasonal_final = fitted_params.get("seasonal_final")
-        ts_fitted = fitted_params.get("ts_fitted")
-        # Determine the forecast horizon
-        h = end - len(self.get_timeseries()) + 1
-        if h >= 1:
-            match trend_type, seasonal_type:
-                case "add", "add":
-                    forecast = np.array(
-                        [
-                            lvl_final
-                            + i * trend_final
-                            + seasonal_final[(i % period) - 1]
-                            for i in range(1, h + 1)
-                        ],
-                    )
-                case "add", "mul":
-                    forecast = np.array(
-                        [
-                            (lvl_final + i * trend_final)
-                            * seasonal_final[-(-i % period) - 1]
-                            for i in range(1, h + 1)
-                        ],
-                    )
-                case "mul", "add":
-                    forecast = np.array(
-                        [
-                            lvl_final * trend_final**i
-                            + seasonal_final[-(-i % period) - 1]
-                            for i in range(1, h + 1)
-                        ],
-                    )
-                case "mul", "mul":
-                    forecast = np.array(
-                        [
-                            lvl_final
-                            * trend_final**i
-                            * seasonal_final[-(-i % period) - 1]
-                            for i in range(1, h + 1)
-                        ],
-                    )
-                case _:
-                    err_msg = (
-                        f"Invalid combination of trend_type and seasonal_type:"
-                        f" {trend_type}, {seasonal_type}"
-                    )
-                    raise ValueError(err_msg)
-            ts_fitted = np.concatenate((ts_fitted, forecast))
+    ) -> FittedParams:
+        """Get the fitted parameters."""
+        if not self._fitted_params:
+            err_msg = (
+                "Model has not been fitted yet. Call the `fit` method first."
+            )
+            raise ValueError(err_msg)
 
-        return ts_fitted[start : end + 1]
+        if not isinstance(self._fitted_params, dict):
+            err_msg = (
+                "Fitted parameters are not of the expected type. ",
+                f"Expected {FittedParams}, got {type(self._fitted_params)}.",
+            )
+            raise TypeError(err_msg)
+
+        return self._fitted_params
 
     @staticmethod
     def calc_exp_smoothing(
