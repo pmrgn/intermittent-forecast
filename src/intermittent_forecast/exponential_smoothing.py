@@ -126,6 +126,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         alpha: float | None = None,
         beta: float | None = None,
         gamma: float | None = None,
+        optimisation_metric: str | None = None,
     ) -> None:
         # Validate trend and seasonal types, and convert to enum members.
         trend_type_member = utils.get_enum_member_from_str(
@@ -138,6 +139,24 @@ class TripleExponentialSmoothing(BaseForecaster):
             enum_class=SmoothingType,
             member_name="seasonal_type",
         )
+
+        # TODO: Validate smoothing params.
+
+        if alpha is None or beta is None or gamma is None:
+            # TODO: Bundle params together
+            error_metric_func = ErrorMetricRegistry.get(
+                optimisation_metric or "MSE",
+            )
+
+            alpha, beta, gamma = (
+                TripleExponentialSmoothing._get_optimised_parameters(
+                    ts=self.get_timeseries(),
+                    error_metric_func=error_metric_func,
+                    period=period,
+                    trend_type=trend_type_member,
+                    seasonal_type=seasonal_type_member,
+                )
+            )
 
         lvl_final, trend_final, seasonal_final, ts_fitted = (
             TripleExponentialSmoothing.calc_exp_smoothing(
@@ -334,13 +353,12 @@ class TripleExponentialSmoothing(BaseForecaster):
     @staticmethod
     def _get_optimised_parameters(
         ts: npt.NDArray[np.float64],
-        metric: str,
+        error_metric_func: Callable[..., float],
         period: int,
         trend_type: SmoothingType,
         seasonal_type: SmoothingType,
     ) -> tuple[float, float, float]:
         """Return squared error between timeseries and smoothed array"""
-        error_metric_func = ErrorMetricRegistry.get(metric)
         # TODO: Change to alpha_bnds, store as tuple. Same for Crostons.
         # Set the bounds for alpha and beta.
         alpha_min, alpha_max = (0, 1)
