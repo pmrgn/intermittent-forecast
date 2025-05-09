@@ -193,3 +193,39 @@ def test_tes_mul_add_forecast() -> None:
     )
     expected = [36.811832, 39.583080, 46.527776, 48.683056, 40.843839]
     np.testing.assert_allclose(result, expected, rtol=1e-5)
+
+
+def test_tes_add_add_optimised() -> None:
+    ts = np.array(
+        [1, 2, 3, 2, 5, 6, 4, 7, 9, 8, 11, 15, 13, 16, 19, 19, 23, 25],
+    )
+    ts = ts_all_positive
+    len_ts = len(ts)
+    forecast_estimated = (
+        TripleExponentialSmoothing()
+        .fit(
+            ts=ts,
+            trend_type=SmoothingType.ADD.value,
+            seasonal_type=SmoothingType.ADD.value,
+            alpha=0.3,
+            beta=0.2,
+            gamma=0.1,
+            period=4,
+        )
+        .forecast(start=0, end=(len_ts - 1))
+    )
+    forecast_optimised = (
+        TripleExponentialSmoothing()
+        .fit(
+            ts=ts,
+            trend_type=SmoothingType.ADD.value,
+            seasonal_type=SmoothingType.ADD.value,
+            period=4,
+        )
+        .forecast(start=0, end=(len_ts - 1))
+    )
+    estimated_mse = np.mean((ts - forecast_estimated) ** 2)
+    optimised_mse = np.mean((ts - forecast_optimised) ** 2)
+    assert optimised_mse < estimated_mse, (
+        f"Expected {optimised_mse} to be less than {estimated_mse}"
+    )
