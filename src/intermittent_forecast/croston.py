@@ -13,7 +13,7 @@ from intermittent_forecast.base_forecaster import BaseForecaster
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
-class FittedParams(TypedDict):
+class FittedValues(TypedDict):
     """TypedDict for fitted parameters."""
 
     alpha: float
@@ -26,19 +26,23 @@ class CrostonVariant(BaseForecaster):
 
     requires_bias_correction = False
 
+    def __init__(self) -> None:
+        """Initialise the forecaster."""
+        super().__init__()
+        self._fitted_params: FittedValues | None = None
+
     def forecast(
         self,
         start: int,
         end: int,
     ) -> npt.NDArray[np.float64]:
         """Forecast the time series using the fitted parameters."""
-        if not isinstance(self._fitted_params, dict):
-            err_msg = "Model has not been fitted yet."
-            raise TypeError(err_msg)
-
         start = utils.validate_non_negative_integer(start, name="start")
         end = utils.validate_positive_integer(end, name="end")
-        forecast = self._fitted_params.get("ts_fitted")
+
+        # Unpack the fitted values
+        fitted_values = self.get_fitted_params()
+        forecast = fitted_values.get("ts_fitted")
 
         if len(forecast) < end:
             # Append with the out of sample forecast
@@ -47,6 +51,18 @@ class CrostonVariant(BaseForecaster):
             )
 
         return forecast[start:end]
+
+    def get_fitted_params(
+        self,
+    ) -> FittedValues:
+        """Get the fitted parameters."""
+        if not self._fitted_params:
+            err_msg = (
+                "Model has not been fitted yet. Call the `fit` method first."
+            )
+            raise ValueError(err_msg)
+
+        return self._fitted_params
 
     def _fit(
         self,
@@ -91,7 +107,7 @@ class CrostonVariant(BaseForecaster):
         )
 
         # Cache results
-        self._fitted_params = FittedParams(
+        self._fitted_params = FittedValues(
             alpha=alpha,
             beta=beta,
             ts_fitted=forecast,

@@ -2,27 +2,27 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from enum import Enum
+from typing import TypeVar
 
 import numpy as np
 import numpy.typing as npt
 
-if TYPE_CHECKING:
-    from enum import Enum
+EnumMember = TypeVar("EnumMember", bound=Enum)
 
 
-def get_enum_from_str(
-    mode_str: str,
-    enum_class: type[Enum],
-    mode_name: str,
-) -> Enum:
+def get_enum_member_from_str(
+    member_str: str,
+    enum_class: type[EnumMember],
+    member_name: str,
+) -> EnumMember:
     """Convert a string to an enum value."""
     try:
-        return enum_class(mode_str.lower())
+        return enum_class(member_str.lower())
     except ValueError:
         expected = [m.value for m in enum_class]
         err_msg = (
-            f"Unknown {mode_name} mode: '{mode_str}'. "
+            f"Unknown {member_name} member: '{member_str}'. "
             f"Expected one of: {expected}",
         )
         raise ValueError(err_msg) from None
