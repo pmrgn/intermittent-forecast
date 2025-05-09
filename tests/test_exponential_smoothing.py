@@ -120,8 +120,8 @@ def test_tes_add_add_forecast() -> None:
             beta=0.2,
             gamma=0.1,
             period=4,
-            trend_type=SmoothingType.ADDITIVE.value,
-            seasonal_type=SmoothingType.ADDITIVE.value,
+            trend_type=SmoothingType.ADD.value,
+            seasonal_type=SmoothingType.ADD.value,
         )
         .forecast(start=12, end=16)
     )
@@ -144,8 +144,8 @@ def test_tes_add_mul_forecast() -> None:
             beta=0.2,
             gamma=0.1,
             period=4,
-            trend_type=SmoothingType.ADDITIVE.value,
-            seasonal_type=SmoothingType.MULTIPLICATIVE.value,
+            trend_type=SmoothingType.ADD.value,
+            seasonal_type=SmoothingType.MUL.value,
         )
         .forecast(start=12, end=16)
     )
@@ -168,8 +168,8 @@ def test_tes_mul_mul_forecast() -> None:
             beta=0.2,
             gamma=0.1,
             period=4,
-            trend_type=SmoothingType.MULTIPLICATIVE.value,
-            seasonal_type=SmoothingType.MULTIPLICATIVE.value,
+            trend_type=SmoothingType.MUL.value,
+            seasonal_type=SmoothingType.MUL.value,
         )
         .forecast(start=12, end=16)
     )
@@ -186,8 +186,8 @@ def test_tes_mul_add_forecast() -> None:
             beta=0.2,
             gamma=0.1,
             period=4,
-            trend_type=SmoothingType.MULTIPLICATIVE.value,
-            seasonal_type=SmoothingType.ADDITIVE.value,
+            trend_type=SmoothingType.MUL.value,
+            seasonal_type=SmoothingType.ADD.value,
         )
         .forecast(start=12, end=16)
     )

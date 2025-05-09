@@ -1,5 +1,7 @@
 """Exponential Smoothing for Time Series Forecasting."""
 
+from __future__ import annotations
+
 from enum import Enum
 from typing import Callable, TypedDict
 
@@ -15,8 +17,8 @@ from intermittent_forecast.error_metrics import ErrorMetricRegistry
 class SmoothingType(Enum):
     """Enum for aggregation modes."""
 
-    ADDITIVE = "additive"
-    MULTIPLICATIVE = "multiplicative"
+    ADD = "additive"
+    MUL = "multiplicative"
 
 
 class FittedValues(TypedDict):
@@ -64,26 +66,31 @@ class TripleExponentialSmoothing(BaseForecaster):
             # Define trend functions, which differ based on additive or
             # multiplicative trend type, i.e. for additive smoothing the trend
             # final value is added to the level at each step, i.
-            trend_funcs = {
-                SmoothingType.ADDITIVE: lambda lvl, trend, i: lvl + i * trend,
-                SmoothingType.MULTIPLICATIVE: lambda lvl, trend, i: lvl
-                * (trend**i),
+            trend_funcs: dict[
+                SmoothingType,
+                Callable[[float, float, int], float],
+            ] = {
+                SmoothingType.ADD: lambda lvl, trend, i: lvl + i * trend,
+                SmoothingType.MUL: lambda lvl, trend, i: lvl * (trend**i),
             }
 
             # A seasonal combination functions will be used to combine the now
             # adjusted level with the seasonal component. The seasonal
             # component is either added or multiplied to the level, depending on
             # the seasonal type.
-            seasonal_combine = {
-                SmoothingType.ADDITIVE: lambda lvl_adjusted,
-                seasonal: lvl_adjusted + seasonal,
-                SmoothingType.MULTIPLICATIVE: lambda lvl_adjusted,
-                seasonal: lvl_adjusted * seasonal,
+            seasonal_combine_funcs: dict[
+                SmoothingType,
+                Callable[[float, float], float],
+            ] = {
+                SmoothingType.ADD: lambda lvl_adjusted, seasonal: lvl_adjusted
+                + seasonal,
+                SmoothingType.MUL: lambda lvl_adjusted, seasonal: lvl_adjusted
+                * seasonal,
             }
 
-            # Get the correct functions based on types
+            # Get the correct function based on smoothing type.
             apply_trend = trend_funcs[trend_type]
-            apply_seasonal = seasonal_combine[seasonal_type]
+            apply_seasonal = seasonal_combine_funcs[seasonal_type]
 
             # Generate forecast
             forecast = [
@@ -94,6 +101,7 @@ class TripleExponentialSmoothing(BaseForecaster):
                 for i in range(1, h + 1)
             ]
 
+            # Append the out of sample forecast to the fitted values.
             ts_fitted = np.concatenate((ts_fitted, np.array(forecast)))
 
         return ts_fitted[start : end + 1]
@@ -112,20 +120,20 @@ class TripleExponentialSmoothing(BaseForecaster):
 
     def _fit(
         self,
-        trend_type: str = SmoothingType.ADDITIVE.value,
-        seasonal_type: str = SmoothingType.ADDITIVE.value,
+        trend_type: str = SmoothingType.ADD.value,
+        seasonal_type: str = SmoothingType.ADD.value,
         period: int | None = None,
         alpha: float | None = None,
         beta: float | None = None,
         gamma: float | None = None,
     ) -> None:
         # Validate trend and seasonal types, and convert to enum members.
-        trend_type_ = utils.get_enum_member_from_str(
+        trend_type_member = utils.get_enum_member_from_str(
             member_str=trend_type,
             enum_class=SmoothingType,
             member_name="trend_type",
         )
-        seasonal_type_ = utils.get_enum_member_from_str(
+        seasonal_type_member = utils.get_enum_member_from_str(
             member_str=seasonal_type,
             enum_class=SmoothingType,
             member_name="seasonal_type",
@@ -138,8 +146,8 @@ class TripleExponentialSmoothing(BaseForecaster):
                 gamma=gamma,
                 ts=self.get_timeseries(),
                 period=period,
-                trend_type=trend_type_,
-                seasonal_type=seasonal_type_,
+                trend_type=trend_type_member,
+                seasonal_type=seasonal_type_member,
             )
         )
         self._fitted_params = FittedValues(
@@ -147,8 +155,8 @@ class TripleExponentialSmoothing(BaseForecaster):
             beta=beta,
             gamma=gamma,
             ts_fitted=ts_fitted,
-            trend_type=trend_type_,
-            seasonal_type=seasonal_type_,
+            trend_type=trend_type_member,
+            seasonal_type=seasonal_type_member,
             period=period,
             lvl_final=lvl_final,
             trend_final=trend_final,
@@ -167,13 +175,13 @@ class TripleExponentialSmoothing(BaseForecaster):
     ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """Calculate the exponential smoothing."""
         match trend_type, seasonal_type:
-            case SmoothingType.ADDITIVE, SmoothingType.ADDITIVE:
+            case SmoothingType.ADD, SmoothingType.ADD:
                 model = TripleExponentialSmoothing._tes_add_add
-            case SmoothingType.ADDITIVE, SmoothingType.MULTIPLICATIVE:
+            case SmoothingType.ADD, SmoothingType.MUL:
                 model = TripleExponentialSmoothing._tes_add_mul
-            case SmoothingType.MULTIPLICATIVE, SmoothingType.ADDITIVE:
+            case SmoothingType.MUL, SmoothingType.ADD:
                 model = TripleExponentialSmoothing._tes_mul_add
-            case SmoothingType.MULTIPLICATIVE, SmoothingType.MULTIPLICATIVE:
+            case SmoothingType.MUL, SmoothingType.MUL:
                 model = TripleExponentialSmoothing._tes_mul_mul
             case _:
                 err_msg = (
@@ -201,8 +209,8 @@ class TripleExponentialSmoothing(BaseForecaster):
         lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
             ts=ts,
             period=period,
-            trend_type=SmoothingType.ADDITIVE,
-            seasonal_type=SmoothingType.ADDITIVE,
+            trend_type=SmoothingType.ADD,
+            seasonal_type=SmoothingType.ADD,
         )
         for i in range(1, len(lvl)):
             lvl[i] = alpha * (ts[i - 1] - s[i - 1]) + (1 - alpha) * (
@@ -227,8 +235,8 @@ class TripleExponentialSmoothing(BaseForecaster):
         lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
             ts=ts,
             period=period,
-            trend_type=SmoothingType.ADDITIVE,
-            seasonal_type=SmoothingType.MULTIPLICATIVE,
+            trend_type=SmoothingType.ADD,
+            seasonal_type=SmoothingType.MUL,
         )
         for i in range(1, len(lvl)):
             lvl[i] = alpha * (ts[i - 1] / s[i - 1]) + (1 - alpha) * (
@@ -253,8 +261,8 @@ class TripleExponentialSmoothing(BaseForecaster):
         lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
             ts=ts,
             period=period,
-            trend_type=SmoothingType.MULTIPLICATIVE,
-            seasonal_type=SmoothingType.ADDITIVE,
+            trend_type=SmoothingType.MUL,
+            seasonal_type=SmoothingType.ADD,
         )
 
         for i in range(1, len(lvl)):
@@ -280,8 +288,8 @@ class TripleExponentialSmoothing(BaseForecaster):
         lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
             ts=ts,
             period=period,
-            trend_type=SmoothingType.MULTIPLICATIVE,
-            seasonal_type=SmoothingType.MULTIPLICATIVE,
+            trend_type=SmoothingType.MUL,
+            seasonal_type=SmoothingType.MUL,
         )
         for i in range(1, len(lvl)):
             lvl[i] = alpha * (ts[i - 1] / s[i - 1]) + (1 - alpha) * (
@@ -312,13 +320,13 @@ class TripleExponentialSmoothing(BaseForecaster):
         b = np.zeros(n + 1)
         s = np.zeros(n + m)
         lvl[0] = ts[:m].mean()
-        if trend_type == SmoothingType.ADDITIVE:
+        if trend_type == SmoothingType.ADD:
             b[0] = (ts[m : 2 * m].sum() - ts[:m].sum()) / m**2
-        if trend_type == SmoothingType.MULTIPLICATIVE:
+        if trend_type == SmoothingType.MUL:
             b[0] = (ts[m : 2 * m].sum() / ts[:m].sum()) ** (1 / m)
-        if seasonal_type == SmoothingType.ADDITIVE:
+        if seasonal_type == SmoothingType.ADD:
             s[:m] = ts[:m] - lvl[0]
-        if seasonal_type == SmoothingType.MULTIPLICATIVE:
+        if seasonal_type == SmoothingType.MUL:
             s[:m] = ts[:m] / lvl[0]
 
         return lvl, b, s
@@ -328,8 +336,8 @@ class TripleExponentialSmoothing(BaseForecaster):
         ts: npt.NDArray[np.float64],
         metric: str,
         period: int,
-        trend_type: str,
-        seasonal_type: str,
+        trend_type: SmoothingType,
+        seasonal_type: SmoothingType,
     ) -> tuple[float, float, float]:
         """Return squared error between timeseries and smoothed array"""
         error_metric_func = ErrorMetricRegistry.get(metric)
@@ -372,8 +380,8 @@ class TripleExponentialSmoothing(BaseForecaster):
         ts: npt.NDArray[np.float64],
         error_metric_func: Callable[..., float],
         period: int,
-        trend_type: str,
-        seasonal_type: str,
+        trend_type: SmoothingType,
+        seasonal_type: SmoothingType,
     ) -> float:
         """Cost function used for optimisation of alpha and beta."""
         alpha, beta, gamma = params

@@ -2,20 +2,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from enum import Enum
+from typing import TypeVar
 
 import numpy as np
 import numpy.typing as npt
 
-if TYPE_CHECKING:
-    from enum import Enum
+EnumMember = TypeVar("EnumMember", bound=Enum)
 
 
 def get_enum_member_from_str(
     member_str: str,
-    enum_class: type[Enum],
+    enum_class: type[EnumMember],
     member_name: str,
-) -> Enum:
+) -> EnumMember:
     """Convert a string to an enum value."""
     try:
         return enum_class(member_str.lower())
