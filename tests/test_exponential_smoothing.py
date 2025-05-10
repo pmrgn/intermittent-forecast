@@ -1,7 +1,14 @@
-"""Tests for the CRO class in the croston module."""
+"""Tests for Exponential Smoothing."""
+
+import itertools
 
 import numpy as np
+import pytest
 
+from intermittent_forecast.error_metrics import (
+    ErrorMetricFunc,
+    ErrorMetricRegistry,
+)
 from intermittent_forecast.exponential_smoothing import (
     SmoothingType,
     TripleExponentialSmoothing,
@@ -195,21 +202,50 @@ def test_tes_mul_add_forecast() -> None:
     np.testing.assert_allclose(result, expected, rtol=1e-5)
 
 
-def test_tes_add_add_optimised() -> None:
-    ts = np.array(
-        [1, 2, 3, 2, 5, 6, 4, 7, 9, 8, 11, 15, 13, 16, 19, 19, 23, 25],
-    )
+# Build test cases for the optimised forecast error test
+default_params = {"alpha": 0.3, "beta": 0.2, "gamma": 0.1}
+
+smoothing_combinations = list(
+    itertools.product(
+        [SmoothingType.ADD, SmoothingType.MUL],
+        [SmoothingType.ADD, SmoothingType.MUL],
+    ),
+)
+error_metrics_str = ErrorMetricRegistry.get_registry().keys()
+
+test_cases = [
+    (default_params, {"trend": trend, "seasonal": seasonal}, metric)
+    for trend, seasonal in smoothing_combinations
+    for metric in error_metrics_str
+]
+
+
+@pytest.mark.parametrize(
+    ("smoothing_params", "smoothing_type", "error_metric"),
+    test_cases,
+)
+def test_optimised_forecast_error_less_than_non_optimised(
+    smoothing_params: dict[str, float],
+    smoothing_type: dict[str, SmoothingType],
+    error_metric: ErrorMetricFunc,
+) -> None:
+    """Test that an optimised forecast produces minimised error.
+
+    This test checks that when fitting the parameters through optimisation,
+    the resulting forecast has a lower error than when using the provided
+    parameters.
+    """
     ts = ts_all_positive
     len_ts = len(ts)
     forecast_estimated = (
         TripleExponentialSmoothing()
         .fit(
             ts=ts,
-            trend_type=SmoothingType.ADD.value,
-            seasonal_type=SmoothingType.ADD.value,
-            alpha=0.3,
-            beta=0.2,
-            gamma=0.1,
+            trend_type=smoothing_type["trend"].value,
+            seasonal_type=smoothing_type["seasonal"].value,
+            alpha=smoothing_params["alpha"],
+            beta=smoothing_params["beta"],
+            gamma=smoothing_params["gamma"],
             period=4,
         )
         .forecast(start=0, end=(len_ts - 1))
@@ -218,14 +254,20 @@ def test_tes_add_add_optimised() -> None:
         TripleExponentialSmoothing()
         .fit(
             ts=ts,
-            trend_type=SmoothingType.ADD.value,
-            seasonal_type=SmoothingType.ADD.value,
+            trend_type=smoothing_type["trend"].value,
+            seasonal_type=smoothing_type["seasonal"].value,
             period=4,
+            optimisation_metric=error_metric,
         )
         .forecast(start=0, end=(len_ts - 1))
     )
-    estimated_mse = np.mean((ts - forecast_estimated) ** 2)
-    optimised_mse = np.mean((ts - forecast_optimised) ** 2)
-    assert optimised_mse < estimated_mse, (
-        f"Expected {optimised_mse} to be less than {estimated_mse}"
+    # Get the error metric function from the string
+    error_metric_func = ErrorMetricRegistry.get(error_metric)
+
+    # Calculate the error for both forecasts
+    err_naive_forecast = error_metric_func(ts, forecast_estimated)
+    err_optimised_forecast = error_metric_func(ts, forecast_optimised)
+
+    assert err_optimised_forecast < err_naive_forecast, (
+        f"Expected {err_optimised_forecast} to be less than {err_naive_forecast}"
     )

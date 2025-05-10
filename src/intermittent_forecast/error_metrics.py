@@ -47,6 +47,11 @@ class ErrorMetricRegistry:
             raise ValueError(err_msg) from None
         return cls._registry[name.upper()]
 
+    @classmethod
+    def get_registry(cls) -> dict[str, ErrorMetricFunc]:
+        """Return the registry of error metrics."""
+        return cls._registry
+
 
 class ErrorMetrics:
     """Class for error metrics."""
