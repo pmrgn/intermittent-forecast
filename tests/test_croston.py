@@ -1,9 +1,15 @@
 """Tests for the CRO class in the croston module."""
 
+import itertools
+
 import numpy as np
 import pytest
 
 from intermittent_forecast.croston import CRO, SBA, SBJ, TSB
+from intermittent_forecast.error_metrics import (
+    ErrorMetricFunc,
+    ErrorMetricRegistry,
+)
 
 
 @pytest.fixture
@@ -149,18 +155,59 @@ def test_tsb_forecast(basic_time_series: list[float]) -> None:
     )
 
 
-def test_croston_fit() -> None:
-    """Test that the fit method calculates the correct parameter values."""
-    ts = [1, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 4, 0, 5, 6]
-    croston = CRO().fit(ts=ts)
-    fitted_params = croston.get_fitted_params()
-    expected_alpha = 1
-    fitted_alpha = fitted_params.get("alpha")
-    expected_beta = 1
-    fitted_beta = fitted_params.get("beta")
-    if fitted_alpha != expected_alpha:
-        error_message = f"Expected alpha: {expected_alpha}, got: {fitted_alpha}"
-        raise AssertionError(error_message)
-    if fitted_beta != expected_beta:
-        error_message = f"Expected beta: {expected_beta}, got: {fitted_beta}"
-        raise AssertionError(error_message)
+parameter_grid_search = list(
+    itertools.product(
+        [0.01, 0.1, 0.99],
+        [0.01, 0.1, 0.99],
+    ),
+)
+error_metrics_str = ErrorMetricRegistry.get_registry().keys()
+test_cases = [
+    (params, metric)
+    for params in parameter_grid_search
+    for metric in error_metrics_str
+]
+
+
+@pytest.mark.parametrize(
+    ("smoothing_params", "error_metric"),
+    test_cases,
+)
+def test_optimised_forecast_error_less_than_non_optimised(
+    smoothing_params: tuple[float, float],
+    error_metric: ErrorMetricFunc,
+) -> None:
+    """Test that an optimised forecast produces minimised error.
+
+    This test checks that when fitting the parameters through optimisation,
+    the resulting forecast has a lower error than when using the provided
+    parameters.
+    """
+    ts = np.array([1, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 4, 0, 5, 6])
+    len_ts = len(ts)
+    forecast_estimated = (
+        CRO()
+        .fit(
+            ts=ts,
+            alpha=smoothing_params[0],
+            beta=smoothing_params[1],
+        )
+        .forecast(start=0, end=(len_ts))
+    )
+
+    forecast_optimised = (
+        CRO().fit(ts=ts, metric=error_metric).forecast(start=0, end=(len_ts))
+    )
+    # Get the error metric function from the string
+    error_metric_func = ErrorMetricRegistry.get(error_metric)
+
+    # Calculate the error for both forecasts
+    err_naive_forecast = error_metric_func(ts, forecast_estimated)
+    err_optimised_forecast = error_metric_func(ts, forecast_optimised)
+
+    if not (err_optimised_forecast <= err_naive_forecast):
+        err_msg = (
+            f"Expected optimised forecast error to be less than default guess. "
+            f"Got: {err_optimised_forecast} greater than {err_naive_forecast}"
+        )
+        raise ValueError(err_msg)
