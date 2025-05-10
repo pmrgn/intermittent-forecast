@@ -359,18 +359,17 @@ class TripleExponentialSmoothing(BaseForecaster):
         seasonal_type: SmoothingType,
     ) -> tuple[float, float, float]:
         """Return squared error between timeseries and smoothed array"""
-        # TODO: Change to alpha_bnds, store as tuple. Same for Crostons.
-        # Set the bounds for alpha and beta.
-        alpha_min, alpha_max = (0, 1)
-        beta_min, beta_max = (0, 1)
-        gamma_min, gamma_max = (0, 1)
+        # Set the bounds for the smoothing parameters.
+        alpha_bounds = (0, 1)
+        beta_bounds = (0, 1)
+        gamma_bounds = (0, 1)
 
         # Set the initial guess as the midpoint of the bounds for alpha and
         # beta.
         initial_guess = (
-            (alpha_max - alpha_min) / 2,
-            (beta_max - beta_min) / 2,
-            (gamma_max - gamma_min) / 2,
+            sum(alpha_bounds) / 2,
+            sum(beta_bounds) / 2,
+            sum(gamma_bounds) / 2,
         )
         min_err = optimize.minimize(
             TripleExponentialSmoothing._cost_function,
@@ -383,9 +382,9 @@ class TripleExponentialSmoothing(BaseForecaster):
                 seasonal_type,
             ),
             bounds=[
-                (alpha_min, alpha_max),
-                (beta_min, beta_max),
-                (gamma_min, gamma_max),
+                alpha_bounds,
+                beta_bounds,
+                gamma_bounds,
             ],
         )
         alpha, beta, gamma = min_err.x
