@@ -165,22 +165,21 @@ class CrostonVariant(BaseForecaster):
     ) -> tuple[float, float]:
         """Optimise the smoothing parameters alpha and beta."""
         error_metric_func = ErrorMetricRegistry.get(metric)
-        # TODO: Change to alpha_bnds, store as tuple. Same for Crostons.
-        # Set the bounds for alpha and beta.
-        alpha_min, alpha_max = (0, 1)
-        beta_min, beta_max = (0, 1)
+        # Set the bounds for the smoothing parameters.
+        alpha_bounds = (0, 1)
+        beta_bounds = (0, 1)
 
         # Set the initial guess as the midpoint of the bounds for alpha and
         # beta.
         initial_guess = (
-            (alpha_max - alpha_min) / 2,
-            (beta_max - beta_min) / 2,
+            sum(alpha_bounds) / 2,
+            sum(beta_bounds) / 2,
         )
         min_err = optimize.minimize(
             CrostonVariant._cost_function,
             initial_guess,
             args=(ts, error_metric_func),
-            bounds=[(alpha_min, alpha_max), (beta_min, beta_max)],
+            bounds=[alpha_bounds, beta_bounds],
         )
         alpha, beta = min_err.x
         return alpha, beta

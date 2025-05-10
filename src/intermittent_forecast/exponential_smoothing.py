@@ -364,8 +364,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         beta_bounds = (0, 1)
         gamma_bounds = (0, 1)
 
-        # Set the initial guess as the midpoint of the bounds for alpha and
-        # beta.
+        # Set the initial guess as the midpoint of the bounds.
         initial_guess = (
             sum(alpha_bounds) / 2,
             sum(beta_bounds) / 2,
