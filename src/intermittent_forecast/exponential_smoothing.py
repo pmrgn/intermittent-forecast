@@ -149,7 +149,7 @@ class TripleExponentialSmoothing(BaseForecaster):
             )
 
             alpha, beta, gamma = (
-                TripleExponentialSmoothing._get_optimised_parameters(
+                TripleExponentialSmoothing._find_optimal_parameters(
                     ts=self.get_timeseries(),
                     error_metric_func=error_metric_func,
                     period=period,
@@ -159,7 +159,7 @@ class TripleExponentialSmoothing(BaseForecaster):
             )
 
         lvl_final, trend_final, seasonal_final, ts_fitted = (
-            TripleExponentialSmoothing.calc_exp_smoothing(
+            TripleExponentialSmoothing._compute_exponential_smoothing(
                 alpha=alpha,
                 beta=beta,
                 gamma=gamma,
@@ -183,25 +183,25 @@ class TripleExponentialSmoothing(BaseForecaster):
         )
 
     @staticmethod
-    def calc_exp_smoothing(
+    def _compute_exponential_smoothing(
+        ts: npt.NDArray[np.float64],
         alpha: int,
         beta: int,
         gamma: int,
-        ts: npt.NDArray[np.float64],
         period: int,
         trend_type: SmoothingType,
         seasonal_type: SmoothingType,
     ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-        """Calculate the exponential smoothing."""
+        """Compute exponential smoothing."""
         match trend_type, seasonal_type:
             case SmoothingType.ADD, SmoothingType.ADD:
-                model = TripleExponentialSmoothing._tes_add_add
+                fn = TripleExponentialSmoothing._calculate_add_add_smoothing
             case SmoothingType.ADD, SmoothingType.MUL:
-                model = TripleExponentialSmoothing._tes_add_mul
+                fn = TripleExponentialSmoothing._calculate_add_mul_smoothing
             case SmoothingType.MUL, SmoothingType.ADD:
-                model = TripleExponentialSmoothing._tes_mul_add
+                fn = TripleExponentialSmoothing._calculate_mul_add_smoothing
             case SmoothingType.MUL, SmoothingType.MUL:
-                model = TripleExponentialSmoothing._tes_mul_mul
+                fn = TripleExponentialSmoothing._calculate_mul_mul_smoothing
             case _:
                 err_msg = (
                     f"Invalid combination of trend_type and seasonal_type: "
@@ -209,7 +209,7 @@ class TripleExponentialSmoothing(BaseForecaster):
                 )
                 raise ValueError(err_msg)
 
-        return model(
+        return fn(
             ts=ts,
             alpha=alpha,
             beta=beta,
@@ -218,14 +218,14 @@ class TripleExponentialSmoothing(BaseForecaster):
         )
 
     @staticmethod
-    def _tes_add_add(
+    def _calculate_add_add_smoothing(
         ts: npt.NDArray[np.float64],
         alpha: float,
         beta: float,
         gamma: float,
         period: int,
     ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-        lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
+        lvl, b, s = TripleExponentialSmoothing._initialise_arrays(
             ts=ts,
             period=period,
             trend_type=SmoothingType.ADD,
@@ -244,14 +244,14 @@ class TripleExponentialSmoothing(BaseForecaster):
         return lvl[-1], b[-1], s[-period:], ts_fitted
 
     @staticmethod
-    def _tes_add_mul(
+    def _calculate_add_mul_smoothing(
         ts: npt.NDArray[np.float64],
         alpha: float,
         beta: float,
         gamma: float,
         period: int,
     ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-        lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
+        lvl, b, s = TripleExponentialSmoothing._initialise_arrays(
             ts=ts,
             period=period,
             trend_type=SmoothingType.ADD,
@@ -270,14 +270,14 @@ class TripleExponentialSmoothing(BaseForecaster):
         return lvl[-1], b[-1], s[-period:], ts_fitted
 
     @staticmethod
-    def _tes_mul_add(
+    def _calculate_mul_add_smoothing(
         ts: npt.NDArray[np.float64],
         alpha: float,
         beta: float,
         gamma: float,
         period: int,
     ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-        lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
+        lvl, b, s = TripleExponentialSmoothing._initialise_arrays(
             ts=ts,
             period=period,
             trend_type=SmoothingType.MUL,
@@ -297,14 +297,14 @@ class TripleExponentialSmoothing(BaseForecaster):
         return lvl[-1], b[-1], s[-period:], ts_fitted
 
     @staticmethod
-    def _tes_mul_mul(
+    def _calculate_mul_mul_smoothing(
         ts: npt.NDArray[np.float64],
         alpha: float,
         beta: float,
         gamma: float,
         period: int,
     ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-        lvl, b, s = TripleExponentialSmoothing.initialise_arrays(
+        lvl, b, s = TripleExponentialSmoothing._initialise_arrays(
             ts=ts,
             period=period,
             trend_type=SmoothingType.MUL,
@@ -323,7 +323,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         return lvl[-1], b[-1], s[-period:], ts_fitted
 
     @staticmethod
-    def initialise_arrays(
+    def _initialise_arrays(
         ts: npt.NDArray[np.float64],
         period: int,
         trend_type: SmoothingType,
@@ -351,7 +351,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         return lvl, b, s
 
     @staticmethod
-    def _get_optimised_parameters(
+    def _find_optimal_parameters(
         ts: npt.NDArray[np.float64],
         error_metric_func: Callable[..., float],
         period: int,
@@ -359,18 +359,16 @@ class TripleExponentialSmoothing(BaseForecaster):
         seasonal_type: SmoothingType,
     ) -> tuple[float, float, float]:
         """Return squared error between timeseries and smoothed array"""
-        # TODO: Change to alpha_bnds, store as tuple. Same for Crostons.
-        # Set the bounds for alpha and beta.
-        alpha_min, alpha_max = (0, 1)
-        beta_min, beta_max = (0, 1)
-        gamma_min, gamma_max = (0, 1)
+        # Set the bounds for the smoothing parameters.
+        alpha_bounds = (0, 1)
+        beta_bounds = (0, 1)
+        gamma_bounds = (0, 1)
 
-        # Set the initial guess as the midpoint of the bounds for alpha and
-        # beta.
+        # Set the initial guess as the midpoint of the bounds.
         initial_guess = (
-            (alpha_max - alpha_min) / 2,
-            (beta_max - beta_min) / 2,
-            (gamma_max - gamma_min) / 2,
+            sum(alpha_bounds) / 2,
+            sum(beta_bounds) / 2,
+            sum(gamma_bounds) / 2,
         )
         min_err = optimize.minimize(
             TripleExponentialSmoothing._cost_function,
@@ -383,9 +381,9 @@ class TripleExponentialSmoothing(BaseForecaster):
                 seasonal_type,
             ),
             bounds=[
-                (alpha_min, alpha_max),
-                (beta_min, beta_max),
-                (gamma_min, gamma_max),
+                alpha_bounds,
+                beta_bounds,
+                gamma_bounds,
             ],
         )
         alpha, beta, gamma = min_err.x
@@ -403,13 +401,15 @@ class TripleExponentialSmoothing(BaseForecaster):
     ) -> float:
         """Cost function used for optimisation of alpha and beta."""
         alpha, beta, gamma = params
-        *_, ts_fitted = TripleExponentialSmoothing.calc_exp_smoothing(
-            ts=ts,
-            alpha=alpha,
-            beta=beta,
-            gamma=gamma,
-            period=period,
-            trend_type=trend_type,
-            seasonal_type=seasonal_type,
+        *_, ts_fitted = (
+            TripleExponentialSmoothing._compute_exponential_smoothing(
+                ts=ts,
+                alpha=alpha,
+                beta=beta,
+                gamma=gamma,
+                period=period,
+                trend_type=trend_type,
+                seasonal_type=seasonal_type,
+            )
         )
         return error_metric_func(ts, ts_fitted)

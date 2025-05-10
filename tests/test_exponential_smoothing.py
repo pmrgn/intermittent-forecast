@@ -1,4 +1,4 @@
-"""Tests for Exponential Smoothing."""
+"""Tests for Triple Exponential Smoothing."""
 
 import itertools
 
@@ -18,15 +18,20 @@ ts_all_positive = np.array([26, 28, 35, 36, 31, 33, 37, 40, 35, 39, 42, 43])
 ts_intermittent = np.array([0, 2, 4, 8, 0, 3, 7, 9, 0, 0, 2, 6, 1, 1.5, 5, 10])
 
 
-def test_tes_add_add() -> None:
-    *_, result = TripleExponentialSmoothing._tes_add_add(
+def test_forecast_add_add() -> None:
+    """Test forecasts using additive / additive smoothing."""
+    n_obs = len(ts_all_positive)
+    model = TripleExponentialSmoothing().fit(
         ts=ts_all_positive,
         alpha=0.3,
         beta=0.2,
         gamma=0.1,
         period=4,
+        trend_type=SmoothingType.ADD.value,
+        seasonal_type=SmoothingType.ADD.value,
     )
-    expected = [
+    forecast_insample = model.forecast(start=0, end=n_obs - 1)
+    expected_insample = [
         27.0,
         29.64,
         36.9896,
@@ -40,18 +45,38 @@ def test_tes_add_add() -> None:
         43.969815,
         45.551800,
     ]
-    np.testing.assert_allclose(result, expected, rtol=1e-5)
+    np.testing.assert_allclose(forecast_insample, expected_insample, rtol=1e-5)
+
+    forecast_outsample = model.forecast(start=n_obs, end=n_obs + 4)
+    expected_outsample = [
+        36.42864506,
+        39.05020833,
+        45.82886691,
+        47.79049033,
+        39.68805488,
+    ]
+
+    np.testing.assert_allclose(
+        forecast_outsample,
+        expected_outsample,
+        rtol=1e-5,
+    )
 
 
-def test_tes_add_mul() -> None:
-    *_, result = TripleExponentialSmoothing._tes_add_mul(
+def test_forecast_add_mul() -> None:
+    """Test forecasts using additive / multiplicative smoothing."""
+    n_obs = len(ts_all_positive)
+    model = TripleExponentialSmoothing().fit(
         ts=ts_all_positive,
         alpha=0.3,
         beta=0.2,
         gamma=0.1,
         period=4,
+        trend_type=SmoothingType.ADD.value,
+        seasonal_type=SmoothingType.MUL.value,
     )
-    expected = [
+    forecast_insample = model.forecast(start=0, end=n_obs - 1)
+    expected_insample = [
         26.832,
         29.46944,
         37.228352,
@@ -65,18 +90,38 @@ def test_tes_add_mul() -> None:
         45.892068,
         47.372845,
     ]
-    np.testing.assert_allclose(result, expected, rtol=1e-5)
+    np.testing.assert_allclose(forecast_insample, expected_insample, rtol=1e-5)
+
+    forecast_outsample = model.forecast(start=n_obs, end=n_obs + 4)
+    expected_outsample = [
+        35.036353,
+        37.980173,
+        46.663069,
+        49.070469,
+        37.624568,
+    ]
+
+    np.testing.assert_allclose(
+        forecast_outsample,
+        expected_outsample,
+        rtol=1e-5,
+    )
 
 
-def test_tes_mul_mul() -> None:
-    *_, result = TripleExponentialSmoothing._tes_mul_mul(
+def test_forecast_mul_mul() -> None:
+    """Test forecasts using multiplicative / multiplicative smoothing."""
+    n_obs = len(ts_all_positive)
+    model = TripleExponentialSmoothing().fit(
         ts=ts_all_positive,
         alpha=0.3,
         beta=0.2,
         gamma=0.1,
         period=4,
+        trend_type=SmoothingType.MUL.value,
+        seasonal_type=SmoothingType.MUL.value,
     )
-    expected = [
+    forecast_insample = model.forecast(start=0, end=n_obs - 1)
+    expected_insample = [
         26.794806,
         29.420967,
         37.176763,
@@ -90,18 +135,32 @@ def test_tes_mul_mul() -> None:
         46.285054,
         47.846334,
     ]
-    np.testing.assert_allclose(result, expected, rtol=1e-5)
+    np.testing.assert_allclose(forecast_insample, expected_insample, rtol=1e-5)
+
+    forecast_outsample = model.forecast(start=n_obs, end=n_obs + 4)
+    expected_outsample = [35.405082, 38.512039, 47.495269, 50.148919, 38.663521]
+
+    np.testing.assert_allclose(
+        forecast_outsample,
+        expected_outsample,
+        rtol=1e-5,
+    )
 
 
-def test_tes_mul_add() -> None:
-    *_, result = TripleExponentialSmoothing._tes_mul_add(
+def test_forecast_mul_add() -> None:
+    """Test forecasts using multiplicative / additive smoothing."""
+    n_obs = len(ts_all_positive)
+    model = TripleExponentialSmoothing().fit(
         ts=ts_all_positive,
         alpha=0.3,
         beta=0.2,
         gamma=0.1,
         period=4,
+        trend_type=SmoothingType.MUL.value,
+        seasonal_type=SmoothingType.ADD.value,
     )
-    expected = [
+    forecast_insample = model.forecast(start=0, end=n_obs - 1)
+    expected_insample = [
         26.955296,
         29.585901,
         36.943539,
@@ -115,91 +174,16 @@ def test_tes_mul_add() -> None:
         44.266201,
         45.9056501,
     ]
-    np.testing.assert_allclose(result, expected, rtol=1e-5)
+    np.testing.assert_allclose(forecast_insample, expected_insample, rtol=1e-5)
 
+    forecast_outsample = model.forecast(start=n_obs, end=n_obs + 4)
+    expected_outsample = [36.811832, 39.583080, 46.527776, 48.683056, 40.843839]
 
-def test_tes_add_add_forecast() -> None:
-    result = (
-        TripleExponentialSmoothing()
-        .fit(
-            ts=ts_all_positive,
-            alpha=0.3,
-            beta=0.2,
-            gamma=0.1,
-            period=4,
-            trend_type=SmoothingType.ADD.value,
-            seasonal_type=SmoothingType.ADD.value,
-        )
-        .forecast(start=12, end=16)
+    np.testing.assert_allclose(
+        forecast_outsample,
+        expected_outsample,
+        rtol=1e-5,
     )
-    expected = [
-        36.42864506,
-        39.05020833,
-        45.82886691,
-        47.79049033,
-        39.68805488,
-    ]
-    np.testing.assert_allclose(result, expected, rtol=1e-5)
-
-
-def test_tes_add_mul_forecast() -> None:
-    result = (
-        TripleExponentialSmoothing()
-        .fit(
-            ts=ts_all_positive,
-            alpha=0.3,
-            beta=0.2,
-            gamma=0.1,
-            period=4,
-            trend_type=SmoothingType.ADD.value,
-            seasonal_type=SmoothingType.MUL.value,
-        )
-        .forecast(start=12, end=16)
-    )
-    expected = [
-        35.036353,
-        37.980173,
-        46.663069,
-        49.070469,
-        37.624568,
-    ]
-    np.testing.assert_allclose(result, expected, rtol=1e-5)
-
-
-def test_tes_mul_mul_forecast() -> None:
-    result = (
-        TripleExponentialSmoothing()
-        .fit(
-            ts=ts_all_positive,
-            alpha=0.3,
-            beta=0.2,
-            gamma=0.1,
-            period=4,
-            trend_type=SmoothingType.MUL.value,
-            seasonal_type=SmoothingType.MUL.value,
-        )
-        .forecast(start=12, end=16)
-    )
-    expected = [35.405082, 38.512039, 47.495269, 50.148919, 38.663521]
-    np.testing.assert_allclose(result, expected, rtol=1e-5)
-
-
-def test_tes_mul_add_forecast() -> None:
-    result = (
-        TripleExponentialSmoothing()
-        .fit(
-            ts=ts_all_positive,
-            alpha=0.3,
-            beta=0.2,
-            gamma=0.1,
-            period=4,
-            trend_type=SmoothingType.MUL.value,
-            seasonal_type=SmoothingType.ADD.value,
-        )
-        .forecast(start=12, end=16)
-    )
-    expected = [36.811832, 39.583080, 46.527776, 48.683056, 40.843839]
-    np.testing.assert_allclose(result, expected, rtol=1e-5)
 
 
 # Build test cases for the optimised forecast error test
@@ -268,6 +252,9 @@ def test_optimised_forecast_error_less_than_non_optimised(
     err_naive_forecast = error_metric_func(ts, forecast_estimated)
     err_optimised_forecast = error_metric_func(ts, forecast_optimised)
 
-    assert err_optimised_forecast < err_naive_forecast, (
-        f"Expected {err_optimised_forecast} to be less than {err_naive_forecast}"
-    )
+    if not (err_optimised_forecast < err_naive_forecast):
+        err_msg = (
+            f"Expected optimised forecast error to be less than default guess. "
+            f"Got: {err_optimised_forecast} greater than {err_naive_forecast}"
+        )
+        raise ValueError(err_msg)
