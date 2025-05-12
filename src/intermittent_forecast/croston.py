@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, TypedDict
+from typing import Callable, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
@@ -13,7 +13,7 @@ from intermittent_forecast.base_forecaster import BaseForecaster
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
-class FittedValues(TypedDict):
+class FittedValues(NamedTuple):
     """TypedDict for fitted parameters."""
 
     alpha: float
@@ -42,7 +42,7 @@ class CrostonVariant(BaseForecaster):
 
         # Unpack the fitted values
         fitted_values = self.get_fitted_params()
-        forecast = fitted_values.get("ts_fitted")
+        forecast = fitted_values.ts_fitted
 
         if len(forecast) < end:
             # Append with the out of sample forecast

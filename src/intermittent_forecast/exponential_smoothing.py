@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Callable, TypedDict
+from typing import Callable, NamedTuple, TypedDict
 
 import numpy as np
 import numpy.typing as npt
@@ -21,7 +21,7 @@ class SmoothingType(Enum):
     MUL = "multiplicative"
 
 
-class FittedValues(TypedDict):
+class FittedValues(NamedTuple):
     """TypedDict for fitted parameters."""
 
     alpha: float
@@ -52,13 +52,13 @@ class TripleExponentialSmoothing(BaseForecaster):
         """Forecast the time series using the fitted parameters."""
         # Unpack the fitted values
         fitted_params = self.get_fitted_params()
-        trend_type = fitted_params["trend_type"]
-        seasonal_type = fitted_params["seasonal_type"]
-        period = fitted_params["period"]
-        lvl_final = fitted_params["lvl_final"]
-        trend_final = fitted_params["trend_final"]
-        seasonal_final = fitted_params["seasonal_final"]
-        ts_fitted = fitted_params["ts_fitted"]
+        trend_type = fitted_params.trend_type
+        seasonal_type = fitted_params.seasonal_type
+        period = fitted_params.period
+        lvl_final = fitted_params.lvl_final
+        trend_final = fitted_params.trend_final
+        seasonal_final = fitted_params.seasonal_final
+        ts_fitted = fitted_params.ts_fitted
 
         # Determine the forecasting horizon if required
         h = end - len(self._ts) + 1
