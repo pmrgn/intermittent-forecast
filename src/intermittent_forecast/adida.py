@@ -102,13 +102,13 @@ class ADIDA:
         end = utils.validate_positive_integer(end, name="end")
         # Calculate the number of steps to forecast for the aggregated model.
         base_steps = end - len(self._base_ts)
-        agg_steps = self._aggregation_period // base_steps
+        agg_steps = (base_steps // self._aggregation_period) + 1
         self._aggregated_forecast = self._aggregated_model.forecast(
             start=0,
             end=len(self._base_ts) + agg_steps,
         )
         forecast = self._disaggregate()
-        return forecast[start:end]
+        return forecast[start : end + 1]
 
     def _aggregate(
         self,

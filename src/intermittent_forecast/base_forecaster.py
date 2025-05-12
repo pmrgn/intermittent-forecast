@@ -44,6 +44,7 @@ class BaseForecaster(ABC):
         **kwargs: Any,  # noqa: ANN401
     ) -> BaseForecaster:
         """Fit the model to the time-series."""
+        # TODO: Remove from base class, so that ADIDA can see what kwargs are available.
         self.set_timeseries(ts)
         self._fit(**kwargs)
         return self

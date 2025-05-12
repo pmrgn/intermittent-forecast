@@ -6,6 +6,9 @@ import pytest
 
 from intermittent_forecast.adida import ADIDA
 from intermittent_forecast.croston import CRO
+from intermittent_forecast.exponential_smoothing import (
+    TripleExponentialSmoothing,
+)
 
 
 @pytest.fixture
@@ -308,7 +311,7 @@ def test_adida_forecast_croston_block_uniform(
     )
     result = adida_model.fit(ts=time_series_linear, alpha=1, beta=1).forecast(
         start=0,
-        end=len(time_series_linear) + size,
+        end=len(time_series_linear) + size - 1,
     )
     np.testing.assert_allclose(
         result,
@@ -356,7 +359,7 @@ def test_adida_forecast_croston_block_seasonal(
         ts=time_series_linear,
         alpha=1,
         beta=1,
-    ).forecast(start=0, end=len(time_series_linear) + size)
+    ).forecast(start=0, end=len(time_series_linear) + size - 1)
     np.testing.assert_allclose(
         result,
         np.array(expected),
@@ -379,7 +382,7 @@ def test_adida_forecast_croston_cyclical_block_seasonal(
         ts=time_series_cyclical,
         alpha=1,
         beta=1,
-    ).forecast(start=0, end=len(time_series_cyclical) + aggregation_period)
+    ).forecast(start=0, end=len(time_series_cyclical) + aggregation_period - 1)
     np.testing.assert_allclose(
         result,
         np.array(
@@ -401,5 +404,51 @@ def test_adida_forecast_croston_cyclical_block_seasonal(
                 5,
             ],
         ),
+        rtol=1e-5,
+    )
+
+
+def test_adida_forecast_triple_exponential_smoothing() -> None:
+    """Test the ADIDA aggregation method."""
+    # Generate an intermittent array from a non-zero cyclical series.
+    cyclical_series = np.array(
+        [1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 6, 4, 5, 6, 7, 5, 6, 7, 8],
+    )
+    period = 5
+    zero_series = np.zeros(len(cyclical_series) * period)
+
+    # Assign the cyclical array to every 5th value array, to make it
+    # `[1,0,0,0,0,2,0,0,0,0,3,...]`
+    intermittent_series = zero_series.copy()
+    intermittent_series[::period] = cyclical_series
+
+    adida_model = ADIDA(
+        model=TripleExponentialSmoothing(),
+        aggregation_period=period,
+        aggregation_mode="block",
+        disaggregation_mode="seasonal",
+    )
+
+    adida_forecast = adida_model.fit(
+        ts=intermittent_series,
+        period=4,
+    ).forecast(start=0, end=len(intermittent_series) - 1)
+
+    tes_forecast = (
+        TripleExponentialSmoothing()
+        .fit(
+            ts=cyclical_series,
+            period=4,
+        )
+        .forecast(start=0, end=len(cyclical_series) - 1)
+    )
+    tes_forecast_intermittent = zero_series.copy()
+    tes_forecast_intermittent[::period] = tes_forecast
+
+    # The resulting ADIDA forecast should be equivalent to the Exponential
+    # Smoothing forecast,
+    np.testing.assert_allclose(
+        adida_forecast,
+        tes_forecast_intermittent,
         rtol=1e-5,
     )
