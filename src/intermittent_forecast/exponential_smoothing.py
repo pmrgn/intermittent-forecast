@@ -27,6 +27,7 @@ class FittedValues(NamedTuple):
     alpha: float
     beta: float
     gamma: float
+    ts_base: npt.NDArray[np.float64]
     ts_fitted: npt.NDArray[np.float64]
     trend_type: SmoothingType
     seasonal_type: SmoothingType
@@ -58,10 +59,11 @@ class TripleExponentialSmoothing(BaseForecaster):
         lvl_final = fitted_params.lvl_final
         trend_final = fitted_params.trend_final
         seasonal_final = fitted_params.seasonal_final
+        ts_base = fitted_params.ts_base
         ts_fitted = fitted_params.ts_fitted
 
         # Determine the forecasting horizon if required
-        h = end - len(self._ts) + 1
+        h = end - len(ts_base) + 1
         if h > 0:
             # Define trend functions, which differ based on additive or
             # multiplicative trend type, i.e. for additive smoothing the trend
@@ -146,8 +148,7 @@ class TripleExponentialSmoothing(BaseForecaster):
             name="period",
         )
 
-        # TODO: Validate ts. Cache in fitted params?
-        self._ts = ts
+        ts = utils.validate_time_series(ts)
 
         if alpha is None or beta is None or gamma is None:
             # TODO: Bundle params together
@@ -157,7 +158,7 @@ class TripleExponentialSmoothing(BaseForecaster):
 
             alpha, beta, gamma = (
                 TripleExponentialSmoothing._find_optimal_parameters(
-                    ts=self._ts,
+                    ts=ts,
                     error_metric_func=error_metric_func,
                     period=period,
                     trend_type=trend_type_member,
@@ -200,6 +201,7 @@ class TripleExponentialSmoothing(BaseForecaster):
             alpha=alpha,
             beta=beta,
             gamma=gamma,
+            ts_base=ts,
             ts_fitted=ts_fitted,
             trend_type=trend_type_member,
             seasonal_type=seasonal_type_member,
@@ -214,9 +216,9 @@ class TripleExponentialSmoothing(BaseForecaster):
     @staticmethod
     def _compute_exponential_smoothing(
         ts: npt.NDArray[np.float64],
-        alpha: int,
-        beta: int,
-        gamma: int,
+        alpha: float,
+        beta: float,
+        gamma: float,
         period: int,
         trend_type: SmoothingType,
         seasonal_type: SmoothingType,

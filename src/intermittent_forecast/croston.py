@@ -73,11 +73,10 @@ class CrostonVariant(BaseForecaster):
         metric: str = "MSE",
     ) -> CrostonVariant:
         """Fit the model to the time-series."""
-        # TODO: Validate ts
-        self._ts = utils.validate_time_series(ts)
+        ts = utils.validate_time_series(ts)
         if alpha is None or beta is None:
             alpha, beta = self._get_optimised_parameters(
-                self._ts,
+                ts=ts,
                 metric=metric,
             )
         else:
@@ -101,7 +100,7 @@ class CrostonVariant(BaseForecaster):
 
         # Compute forecast using Croston's method.
         forecast = self._compute_forecast(
-            ts=self._ts,
+            ts=ts,
             alpha=alpha,
             beta=beta,
             bias_correction=bias_correction,
