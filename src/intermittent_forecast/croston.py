@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, TypedDict
+from typing import Callable, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
@@ -13,11 +13,12 @@ from intermittent_forecast.base_forecaster import BaseForecaster
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
-class FittedValues(TypedDict):
+class FittedValues(NamedTuple):
     """TypedDict for fitted parameters."""
 
     alpha: float
     beta: float
+    ts_base: npt.NDArray[np.float64]
     ts_fitted: npt.NDArray[np.float64]
 
 
@@ -42,7 +43,7 @@ class CrostonVariant(BaseForecaster):
 
         # Unpack the fitted values
         fitted_values = self.get_fitted_params()
-        forecast = fitted_values.get("ts_fitted")
+        forecast = fitted_values.ts_fitted
 
         if len(forecast) < end:
             # Append with the out of sample forecast
@@ -72,21 +73,20 @@ class CrostonVariant(BaseForecaster):
         metric: str = "MSE",
     ) -> CrostonVariant:
         """Fit the model to the time-series."""
-        # TODO: Validate ts
-        self._ts = utils.validate_time_series(ts)
+        ts = utils.validate_time_series(ts)
         if alpha is None or beta is None:
             alpha, beta = self._get_optimised_parameters(
-                self._ts,
+                ts=ts,
                 metric=metric,
             )
         else:
-            alpha = self._validate_float_within_inclusive_bounds(
+            alpha = utils.validate_float_within_inclusive_bounds(
                 name="alpha",
                 value=alpha,
                 min_value=0,
                 max_value=1,
             )
-            beta = self._validate_float_within_inclusive_bounds(
+            beta = utils.validate_float_within_inclusive_bounds(
                 name="beta",
                 value=beta,
                 min_value=0,
@@ -100,7 +100,7 @@ class CrostonVariant(BaseForecaster):
 
         # Compute forecast using Croston's method.
         forecast = self._compute_forecast(
-            ts=self._ts,
+            ts=ts,
             alpha=alpha,
             beta=beta,
             bias_correction=bias_correction,
@@ -110,6 +110,7 @@ class CrostonVariant(BaseForecaster):
         self._fitted_params = FittedValues(
             alpha=alpha,
             beta=beta,
+            ts_base=ts,
             ts_fitted=forecast,
         )
 
@@ -164,12 +165,16 @@ class CrostonVariant(BaseForecaster):
     def _get_optimised_parameters(
         ts: npt.NDArray[np.float64],
         metric: str = "MSE",
+        alpha: float | None = None,
+        beta: float | None = None,
     ) -> tuple[float, float]:
         """Optimise the smoothing parameters alpha and beta."""
         error_metric_func = ErrorMetricRegistry.get(metric)
-        # Set the bounds for the smoothing parameters.
-        alpha_bounds = (0, 1)
-        beta_bounds = (0, 1)
+        # Set the bounds for the smoothing parameters. If values have been
+        # passed, then the bounds will be locked at that value. Else they are
+        # set at (0,1).
+        alpha_bounds = (alpha or 0, alpha or 1)
+        beta_bounds = (beta or 0, beta or 1)
 
         # Set the initial guess as the midpoint of the bounds for alpha and
         # beta.
