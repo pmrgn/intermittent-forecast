@@ -141,6 +141,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         )
 
         # TODO: Validate smoothing params.
+        # TODO: Validate period.
 
         if alpha is None or beta is None or gamma is None:
             # TODO: Bundle params together
