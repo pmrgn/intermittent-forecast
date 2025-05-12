@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from copy import deepcopy
 from enum import Enum
-from typing import Any
+from typing import Any, TypeVar
 
 import numpy as np
 import numpy.typing as npt
 
 from intermittent_forecast import utils
 from intermittent_forecast.base_forecaster import BaseForecaster
+
+T_BaseForecaster = TypeVar("T_BaseForecaster", bound=BaseForecaster)
 
 
 class AggregationMode(Enum):

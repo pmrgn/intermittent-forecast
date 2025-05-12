@@ -64,16 +64,19 @@ class CrostonVariant(BaseForecaster):
 
         return self._fitted_params
 
-    def _fit(
+    def fit(
         self,
+        ts: npt.NDArray[np.float64],
         alpha: float | None = None,
         beta: float | None = None,
         metric: str = "MSE",
-    ) -> None:
+    ) -> CrostonVariant:
         """Fit the model to the time-series."""
+        # TODO: Validate ts
+        self._ts = utils.validate_time_series(ts)
         if alpha is None or beta is None:
             alpha, beta = self._get_optimised_parameters(
-                self.get_timeseries(),
+                self._ts,
                 metric=metric,
             )
         else:
@@ -90,9 +93,6 @@ class CrostonVariant(BaseForecaster):
                 max_value=1,
             )
 
-        # Get the time series data.
-        ts = self.get_timeseries()
-
         if self.requires_bias_correction:
             bias_correction = self._get_bias_correction_value(beta=beta)
         else:
@@ -100,7 +100,7 @@ class CrostonVariant(BaseForecaster):
 
         # Compute forecast using Croston's method.
         forecast = self._compute_forecast(
-            ts=ts,
+            ts=self._ts,
             alpha=alpha,
             beta=beta,
             bias_correction=bias_correction,
@@ -112,6 +112,8 @@ class CrostonVariant(BaseForecaster):
             beta=beta,
             ts_fitted=forecast,
         )
+
+        return self
 
     @staticmethod
     def _compute_forecast(
