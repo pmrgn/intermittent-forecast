@@ -61,7 +61,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         ts_fitted = fitted_params["ts_fitted"]
 
         # Determine the forecasting horizon if required
-        h = end - len(self.get_timeseries()) + 1
+        h = end - len(self._ts) + 1
         if h > 0:
             # Define trend functions, which differ based on additive or
             # multiplicative trend type, i.e. for additive smoothing the trend
@@ -118,11 +118,12 @@ class TripleExponentialSmoothing(BaseForecaster):
 
         return self._fitted_params
 
-    def _fit(
+    def fit(
         self,
+        ts: npt.NDArray[np.float64],
+        period: int,
         trend_type: str = SmoothingType.ADD.value,
         seasonal_type: str = SmoothingType.ADD.value,
-        period: int | None = None,
         alpha: float | None = None,
         beta: float | None = None,
         gamma: float | None = None,
@@ -140,8 +141,13 @@ class TripleExponentialSmoothing(BaseForecaster):
             member_name="seasonal_type",
         )
 
-        # TODO: Validate smoothing params.
-        # TODO: Validate period.
+        period = utils.validate_non_negative_integer(
+            value=period,
+            name="period",
+        )
+
+        # TODO: Validate ts. Cache in fitted params?
+        self._ts = ts
 
         if alpha is None or beta is None or gamma is None:
             # TODO: Bundle params together
@@ -151,7 +157,7 @@ class TripleExponentialSmoothing(BaseForecaster):
 
             alpha, beta, gamma = (
                 TripleExponentialSmoothing._find_optimal_parameters(
-                    ts=self.get_timeseries(),
+                    ts=self._ts,
                     error_metric_func=error_metric_func,
                     period=period,
                     trend_type=trend_type_member,
@@ -159,12 +165,32 @@ class TripleExponentialSmoothing(BaseForecaster):
                 )
             )
 
+        else:
+            alpha = self._validate_float_within_inclusive_bounds(
+                name="alpha",
+                value=alpha,
+                min_value=0,
+                max_value=1,
+            )
+            beta = self._validate_float_within_inclusive_bounds(
+                name="beta",
+                value=beta,
+                min_value=0,
+                max_value=1,
+            )
+            gamma = self._validate_float_within_inclusive_bounds(
+                name="gamma",
+                value=gamma,
+                min_value=0,
+                max_value=1,
+            )
+
         lvl_final, trend_final, seasonal_final, ts_fitted = (
             TripleExponentialSmoothing._compute_exponential_smoothing(
                 alpha=alpha,
                 beta=beta,
                 gamma=gamma,
-                ts=self.get_timeseries(),
+                ts=ts,
                 period=period,
                 trend_type=trend_type_member,
                 seasonal_type=seasonal_type_member,
@@ -182,6 +208,8 @@ class TripleExponentialSmoothing(BaseForecaster):
             trend_final=trend_final,
             seasonal_final=seasonal_final,
         )
+
+        return self
 
     @staticmethod
     def _compute_exponential_smoothing(

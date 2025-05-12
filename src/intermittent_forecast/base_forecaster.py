@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -38,20 +38,17 @@ class BaseForecaster(ABC):
         """Set the time-series."""
         self._ts = utils.validate_time_series(ts)
 
+    @abstractmethod
     def fit(
         self,
-        ts: npt.NDArray[np.float64] | list[float | int],
-        **kwargs: Any,  # noqa: ANN401
-    ) -> BaseForecaster:
-        """Fit the model to the time-series."""
-        # TODO: Remove from base class, so that ADIDA can see what kwargs are available.
-        self.set_timeseries(ts)
-        self._fit(**kwargs)
-        return self
+        *args,
+        **kwargs,
+    ):
+        """Fit the model to the time-series. Must be implemented."""
 
-    @abstractmethod
-    def _fit(self) -> None:
-        """Fit the model to the time-series and cache results."""
+    # @abstractmethod
+    # def _fit(self) -> None:
+    #     """Fit the model to the time-series and cache results."""
 
     @abstractmethod
     def forecast(
