@@ -165,12 +165,16 @@ class CrostonVariant(BaseForecaster):
     def _get_optimised_parameters(
         ts: npt.NDArray[np.float64],
         metric: str = "MSE",
+        alpha: float | None = None,
+        beta: float | None = None,
     ) -> tuple[float, float]:
         """Optimise the smoothing parameters alpha and beta."""
         error_metric_func = ErrorMetricRegistry.get(metric)
-        # Set the bounds for the smoothing parameters.
-        alpha_bounds = (0, 1)
-        beta_bounds = (0, 1)
+        # Set the bounds for the smoothing parameters. If values have been
+        # passed, then the bounds will be locked at that value. Else they are
+        # set at (0,1).
+        alpha_bounds = (alpha or 0, alpha or 1)
+        beta_bounds = (beta or 0, beta or 1)
 
         # Set the initial guess as the midpoint of the bounds for alpha and
         # beta.

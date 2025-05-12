@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Callable, NamedTuple, TypedDict
+from typing import Callable, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
@@ -155,10 +155,13 @@ class TripleExponentialSmoothing(BaseForecaster):
             error_metric_func = ErrorMetricRegistry.get(
                 optimisation_metric or "MSE",
             )
-
+            # TODO: Need to validate params if required.
             alpha, beta, gamma = (
                 TripleExponentialSmoothing._find_optimal_parameters(
                     ts=ts,
+                    alpha=alpha,
+                    beta=beta,
+                    gamma=gamma,
                     error_metric_func=error_metric_func,
                     period=period,
                     trend_type=trend_type_member,
@@ -388,12 +391,17 @@ class TripleExponentialSmoothing(BaseForecaster):
         period: int,
         trend_type: SmoothingType,
         seasonal_type: SmoothingType,
+        alpha: float | None,
+        beta: float | None,
+        gamma: float | None,
     ) -> tuple[float, float, float]:
         """Return squared error between timeseries and smoothed array"""
-        # Set the bounds for the smoothing parameters.
-        alpha_bounds = (0, 1)
-        beta_bounds = (0, 1)
-        gamma_bounds = (0, 1)
+        # Set the bounds for the smoothing parameters. If values have been
+        # passed, then the bounds will be locked at that value. Else they are
+        # set at (0,1).
+        alpha_bounds = (alpha or 0, beta or 1)
+        beta_bounds = (beta or 0, beta or 1)
+        gamma_bounds = (gamma or 0, gamma or 1)
 
         # Set the initial guess as the midpoint of the bounds.
         initial_guess = (
