@@ -166,19 +166,19 @@ class TripleExponentialSmoothing(BaseForecaster):
             )
 
         else:
-            alpha = self._validate_float_within_inclusive_bounds(
+            alpha = utils.validate_float_within_inclusive_bounds(
                 name="alpha",
                 value=alpha,
                 min_value=0,
                 max_value=1,
             )
-            beta = self._validate_float_within_inclusive_bounds(
+            beta = utils.validate_float_within_inclusive_bounds(
                 name="beta",
                 value=beta,
                 min_value=0,
                 max_value=1,
             )
-            gamma = self._validate_float_within_inclusive_bounds(
+            gamma = utils.validate_float_within_inclusive_bounds(
                 name="gamma",
                 value=gamma,
                 min_value=0,

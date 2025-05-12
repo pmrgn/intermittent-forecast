@@ -13,10 +13,6 @@ if TYPE_CHECKING:
     import numpy.typing as npt
 
 
-class FittedParams:
-    """TypedDict for fitted parameters."""
-
-
 class BaseForecaster(ABC):
     """Base class for forecasting models."""
 

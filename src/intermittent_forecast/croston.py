@@ -18,6 +18,7 @@ class FittedValues(NamedTuple):
 
     alpha: float
     beta: float
+    ts_base: npt.NDArray[np.float64]
     ts_fitted: npt.NDArray[np.float64]
 
 
@@ -80,13 +81,13 @@ class CrostonVariant(BaseForecaster):
                 metric=metric,
             )
         else:
-            alpha = self._validate_float_within_inclusive_bounds(
+            alpha = utils.validate_float_within_inclusive_bounds(
                 name="alpha",
                 value=alpha,
                 min_value=0,
                 max_value=1,
             )
-            beta = self._validate_float_within_inclusive_bounds(
+            beta = utils.validate_float_within_inclusive_bounds(
                 name="beta",
                 value=beta,
                 min_value=0,
@@ -110,6 +111,7 @@ class CrostonVariant(BaseForecaster):
         self._fitted_params = FittedValues(
             alpha=alpha,
             beta=beta,
+            ts_base=ts,
             ts_fitted=forecast,
         )
 
