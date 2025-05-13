@@ -13,7 +13,7 @@ from intermittent_forecast.base_forecaster import BaseForecaster
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
-class FittedValues(NamedTuple):
+class FittedModelResult(NamedTuple):
     """TypedDict for fitted parameters."""
 
     alpha: float
@@ -30,7 +30,7 @@ class CrostonVariant(BaseForecaster):
     def __init__(self) -> None:
         """Initialise the forecaster."""
         super().__init__()
-        self._fitted_params: FittedValues | None = None
+        self._fitted_model_result: FittedModelResult | None = None
 
     def forecast(
         self,
@@ -42,7 +42,7 @@ class CrostonVariant(BaseForecaster):
         end = utils.validate_positive_integer(end, name="end")
 
         # Unpack the fitted values
-        fitted_values = self.get_fitted_params()
+        fitted_values = self.get_fitted_model_result()
         forecast = fitted_values.ts_fitted
 
         if len(forecast) < end:
@@ -53,17 +53,17 @@ class CrostonVariant(BaseForecaster):
 
         return forecast[start:end]
 
-    def get_fitted_params(
+    def get_fitted_model_result(
         self,
-    ) -> FittedValues:
+    ) -> FittedModelResult:
         """Get the fitted parameters."""
-        if not self._fitted_params:
+        if not self._fitted_model_result:
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )
             raise ValueError(err_msg)
 
-        return self._fitted_params
+        return self._fitted_model_result
 
     def fit(
         self,
@@ -109,7 +109,7 @@ class CrostonVariant(BaseForecaster):
         )
 
         # Cache results
-        self._fitted_params = FittedValues(
+        self._fitted_model_result = FittedModelResult(
             alpha=alpha,
             beta=beta,
             ts_base=ts,

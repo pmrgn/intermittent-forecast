@@ -21,7 +21,7 @@ class SmoothingType(Enum):
     MUL = "multiplicative"
 
 
-class FittedValues(NamedTuple):
+class FittedModelResult(NamedTuple):
     """TypedDict for fitted parameters."""
 
     alpha: float
@@ -43,7 +43,7 @@ class TripleExponentialSmoothing(BaseForecaster):
     def __init__(self) -> None:
         """Initialise the forecaster."""
         super().__init__()
-        self._fitted_params: FittedValues | None = None
+        self._fitted_model_result: FittedModelResult | None = None
 
     def forecast(
         self,
@@ -52,7 +52,7 @@ class TripleExponentialSmoothing(BaseForecaster):
     ) -> npt.NDArray[np.float64]:
         """Forecast the time series using the fitted parameters."""
         # Unpack the fitted values
-        fitted_params = self.get_fitted_params()
+        fitted_params = self.get_fitted_model_result()
         trend_type = fitted_params.trend_type
         seasonal_type = fitted_params.seasonal_type
         period = fitted_params.period
@@ -108,17 +108,17 @@ class TripleExponentialSmoothing(BaseForecaster):
 
         return ts_fitted[start : end + 1]
 
-    def get_fitted_params(
+    def get_fitted_model_result(
         self,
-    ) -> FittedValues:
+    ) -> FittedModelResult:
         """Get the fitted parameters."""
-        if not self._fitted_params:
+        if not self._fitted_model_result:
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )
             raise ValueError(err_msg)
 
-        return self._fitted_params
+        return self._fitted_model_result
 
     def fit(
         self,
@@ -200,7 +200,7 @@ class TripleExponentialSmoothing(BaseForecaster):
                 seasonal_type=seasonal_type_member,
             )
         )
-        self._fitted_params = FittedValues(
+        self._fitted_model_result = FittedModelResult(
             alpha=alpha,
             beta=beta,
             gamma=gamma,
