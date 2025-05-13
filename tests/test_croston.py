@@ -217,8 +217,6 @@ def test_partial_optimisation(basic_time_series: list[float]) -> None:
     """Test a smoothing parameter can be set with optimisation."""
     alpha = 0.35
     model = CRO().fit(ts=basic_time_series, alpha=alpha)
-    if alpha != model._fitted_params.alpha:
-        err_msg = (
-            f"Expected alpha to be {alpha}. Got: {model._fitted_params.alpha} "
-        )
+    if alpha != model._fitted_model_result.alpha:
+        err_msg = f"Expected alpha to be {alpha}. Got: {model._fitted_model_result.alpha} "
         raise ValueError(err_msg)

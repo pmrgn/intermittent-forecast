@@ -34,7 +34,7 @@ class ADIDA:
 
     def __init__(
         self,
-        model: BaseForecaster,
+        model: T_BaseForecaster,
         aggregation_period: int,
         aggregation_mode: str,
         disaggregation_mode: str,

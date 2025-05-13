@@ -268,7 +268,7 @@ def test_partial_optimisation() -> None:
         period=4,
         alpha=alpha,
     )
-    alpha_fitted = model.get_fitted_params().alpha
+    alpha_fitted = model.get_fitted_model_result().alpha
     if alpha != alpha_fitted:
         err_msg = f"Expected alpha to be {alpha}. Got: {alpha_fitted} "
         raise ValueError(err_msg)

@@ -17,13 +17,14 @@ class BaseForecaster(ABC):
     def __init__(self) -> None:
         """Initialise the forecaster."""
 
-    @abstractmethod
-    def fit(
-        self,
-        *args,
-        **kwargs,
-    ):
-        """Fit the model to the time-series. Must be implemented."""
+    # @abstractmethod
+    # def fit(
+    #     self,
+    #     ts: npt.NDArray[np.float64],
+    #     *args,
+    #     **kwargs,
+    # ) -> BaseForecaster:
+    #     """Fit the model to the time-series. Must be implemented."""
 
     @abstractmethod
     def forecast(
