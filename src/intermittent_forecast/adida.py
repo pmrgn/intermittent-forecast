@@ -4,15 +4,16 @@ from __future__ import annotations
 
 from copy import deepcopy
 from enum import Enum
-from typing import Any, NamedTuple, TypeVar
+from typing import Any, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
 
 from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import BaseForecaster
-
-T_BaseForecaster = TypeVar("T_BaseForecaster", bound=BaseForecaster)
+from intermittent_forecast.base_forecaster import (
+    BaseForecaster,
+    T_BaseForecaster,
+)
 
 
 class AggregationMode(Enum):
@@ -36,8 +37,8 @@ class ADIDAConfig(NamedTuple):
 
 
 class ADIDAFittedResult(NamedTuple):
-    aggregated_model: T_BaseForecaster
-    temporal_weights: npt.NDArray[np.float64] | None
+    aggregated_model: BaseForecaster
+    temporal_weights: npt.NDArray[np.float64]
     ts_base: npt.NDArray[np.float64]
 
 
@@ -95,22 +96,40 @@ class ADIDA:
             raise TypeError(err_msg)
         aggregated_model = deepcopy(model)
 
-        # Cache time series
-        ts = utils.validate_time_series(ts)
-
         # Aggregate the time series
-        aggregated_ts = self._aggregate(ts)
+        ts = utils.validate_time_series(ts)
+        match self._config.aggregation_mode:
+            case AggregationMode.SLIDING:
+                aggregated_ts = self.sliding_aggregation(
+                    ts=ts,
+                    window_size=self._config.aggregation_period,
+                )
+            case AggregationMode.BLOCK:
+                aggregated_ts = self.block_aggregation(
+                    ts=ts,
+                    window_size=self._config.aggregation_period,
+                )
+        aggregated_ts = utils.validate_time_series(aggregated_ts)
 
         aggregated_model.fit(
             ts=aggregated_ts,
             **kwargs,
         )
 
+        # If using a seasonal disaggregation method, calculate the seasonal
+        # weights.
+        temporal_weights = np.array([])
+        if self._config.disaggregation_mode == DisaggregationMode.SEASONAL:
+            temporal_weights = self.calculate_temporal_weights(
+                ts=ts,
+                cycle_length=self._config.aggregation_period,
+            )
+
         # Cache results
         self._adida_fitted_result = ADIDAFittedResult(
             aggregated_model=aggregated_model,
             ts_base=ts,
-            temporal_weights=None,
+            temporal_weights=temporal_weights,
         )
 
         return self
@@ -130,43 +149,18 @@ class ADIDA:
         """
         start = utils.validate_non_negative_integer(start, name="start")
         end = utils.validate_positive_integer(end, name="end")
-        adida_config = self._config
-        fitted_result = self._adida_fitted_result
 
         # Calculate the number of steps to forecast for the aggregated model.
-        base_steps = end - len(fitted_result.ts_base)
-        agg_steps = (base_steps // adida_config.aggregation_period) + 1
-        self._aggregated_forecast = fitted_result.aggregated_model.forecast(
-            start=0,
-            end=len(fitted_result.ts_base) + agg_steps,
+        base_steps = end - len(self._adida_fitted_result.ts_base)
+        agg_steps = (base_steps // self._config.aggregation_period) + 1
+        self._aggregated_forecast = (
+            self._adida_fitted_result.aggregated_model.forecast(
+                start=0,
+                end=len(self._adida_fitted_result.ts_base) + agg_steps,
+            )
         )
         forecast = self._disaggregate()
         return forecast[start : end + 1]
-
-    def _aggregate(
-        self,
-        ts: npt.NDArray[np.float64],
-    ) -> npt.NDArray[np.float64]:
-        """Aggregate the time-series using a specified window size.
-
-        Parameters
-        ----------
-        ts : npt.NDArray[np.float64]
-            Time-series to aggregate.
-
-        """
-        if self._config.aggregation_mode == AggregationMode.SLIDING:
-            _aggregated_ts = self.sliding_aggregation(
-                ts=ts,
-                window_size=self._config.aggregation_period,
-            )
-        elif self._config.aggregation_mode == AggregationMode.BLOCK:
-            _aggregated_ts = self.block_aggregation(
-                ts=ts,
-                window_size=self._config.aggregation_period,
-            )
-
-        return utils.validate_time_series(_aggregated_ts)
 
     def _disaggregate(
         self,
@@ -208,14 +202,10 @@ class ADIDA:
             raise ValueError(err_msg)
 
         if self._config.disaggregation_mode == DisaggregationMode.SEASONAL:
-            self._temporal_weights = self.calculate_temporal_weights(
-                ts=self._adida_fitted_result.ts_base,
-                cycle_length=self._config.aggregation_period,
-            )
             # Apply the temporal weights to the forecast
             ret = self.apply_temporal_weights(
                 ts=forecast,
-                weights=self._temporal_weights,
+                weights=self._adida_fitted_result.temporal_weights,
             )
 
         elif self._config.disaggregation_mode == DisaggregationMode.UNIFORM:
