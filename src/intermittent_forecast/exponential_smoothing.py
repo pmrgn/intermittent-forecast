@@ -130,7 +130,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         beta: float | None = None,
         gamma: float | None = None,
         optimisation_metric: str | None = None,
-    ) -> None:
+    ) -> TripleExponentialSmoothing:
         # Validate trend and seasonal types, and convert to enum members.
         trend_type_member = utils.get_enum_member_from_str(
             member_str=trend_type,

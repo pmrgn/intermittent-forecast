@@ -258,3 +258,17 @@ def test_optimised_forecast_error_less_than_non_optimised(
             f"Got: {err_optimised_forecast} greater than {err_naive_forecast}"
         )
         raise ValueError(err_msg)
+
+
+def test_partial_optimisation() -> None:
+    """Test a smoothing parameter can be set with optimisation."""
+    alpha = 0.35
+    model = TripleExponentialSmoothing().fit(
+        ts=ts_all_positive,
+        period=4,
+        alpha=alpha,
+    )
+    alpha_fitted = model.get_fitted_params().alpha
+    if alpha != alpha_fitted:
+        err_msg = f"Expected alpha to be {alpha}. Got: {alpha_fitted} "
+        raise ValueError(err_msg)

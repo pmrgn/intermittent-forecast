@@ -214,7 +214,7 @@ def test_optimised_forecast_error_less_than_non_optimised(
 
 
 def test_partial_optimisation(basic_time_series: list[float]) -> None:
-    """Test the smoothing parameters can be partially set."""
+    """Test a smoothing parameter can be set with optimisation."""
     alpha = 0.35
     model = CRO().fit(ts=basic_time_series, alpha=alpha)
     if alpha != model._fitted_params.alpha:
