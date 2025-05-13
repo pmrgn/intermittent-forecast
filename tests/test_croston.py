@@ -211,3 +211,14 @@ def test_optimised_forecast_error_less_than_non_optimised(
             f"Got: {err_optimised_forecast} greater than {err_naive_forecast}"
         )
         raise ValueError(err_msg)
+
+
+def test_partial_optimisation(basic_time_series: list[float]) -> None:
+    """Test the smoothing parameters can be partially set."""
+    alpha = 0.35
+    model = CRO().fit(ts=basic_time_series, alpha=alpha)
+    if alpha != model._fitted_params.alpha:
+        err_msg = (
+            f"Expected alpha to be {alpha}. Got: {model._fitted_params.alpha} "
+        )
+        raise ValueError(err_msg)
