@@ -304,12 +304,16 @@ def test_adida_forecast_croston_block_uniform(
 ) -> None:
     """Test the ADIDA aggregation method."""
     adida_model = ADIDA(
-        model=CRO(),
         aggregation_period=size,
         aggregation_mode="block",
         disaggregation_mode="uniform",
     )
-    result = adida_model.fit(ts=time_series_linear, alpha=1, beta=1).forecast(
+    result = adida_model.fit(
+        model=CRO(),
+        ts=time_series_linear,
+        alpha=1,
+        beta=1,
+    ).forecast(
         start=0,
         end=len(time_series_linear) + size - 1,
     )
@@ -350,12 +354,12 @@ def test_adida_forecast_croston_block_seasonal(
 ) -> None:
     """Test the ADIDA aggregation method."""
     adida_model = ADIDA(
-        model=CRO(),
         aggregation_period=size,
         aggregation_mode="block",
         disaggregation_mode="seasonal",
     )
     result = adida_model.fit(
+        model=CRO(),
         ts=time_series_linear,
         alpha=1,
         beta=1,
@@ -373,12 +377,12 @@ def test_adida_forecast_croston_cyclical_block_seasonal(
     """Test the ADIDA aggregation method."""
     aggregation_period = 5
     adida_model = ADIDA(
-        model=CRO(),
         aggregation_period=aggregation_period,
         aggregation_mode="block",
         disaggregation_mode="seasonal",
     )
     result = adida_model.fit(
+        model=CRO(),
         ts=time_series_cyclical,
         alpha=1,
         beta=1,
@@ -423,13 +427,13 @@ def test_adida_forecast_triple_exponential_smoothing() -> None:
     intermittent_series[::period] = cyclical_series
 
     adida_model = ADIDA(
-        model=TripleExponentialSmoothing(),
         aggregation_period=period,
         aggregation_mode="block",
         disaggregation_mode="seasonal",
     )
 
     adida_forecast = adida_model.fit(
+        model=TripleExponentialSmoothing(),
         ts=intermittent_series,
         period=4,
     ).forecast(start=0, end=len(intermittent_series) - 1)
