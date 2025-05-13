@@ -77,6 +77,8 @@ class CrostonVariant(BaseForecaster):
         if alpha is None or beta is None:
             alpha, beta = self._get_optimised_parameters(
                 ts=ts,
+                alpha=alpha,
+                beta=beta,
                 metric=metric,
             )
         else:
@@ -164,9 +166,9 @@ class CrostonVariant(BaseForecaster):
     @staticmethod
     def _get_optimised_parameters(
         ts: npt.NDArray[np.float64],
+        alpha: float | None,
+        beta: float | None,
         metric: str = "MSE",
-        alpha: float | None = None,
-        beta: float | None = None,
     ) -> tuple[float, float]:
         """Optimise the smoothing parameters alpha and beta."""
         error_metric_func = ErrorMetricRegistry.get(metric)
