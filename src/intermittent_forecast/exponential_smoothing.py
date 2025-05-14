@@ -75,12 +75,25 @@ class TripleExponentialSmoothing(BaseForecaster):
 
         ts = utils.validate_time_series(ts)
 
+        # Validate any provided smoothing parameters.
+        for param, param_str in zip(
+            [alpha, beta, gamma],
+            ["alpha", "beta", "gamma"],
+        ):
+            if param is not None:
+                utils.validate_float_within_inclusive_bounds(
+                    name=param_str,
+                    value=param,
+                    min_value=0,
+                    max_value=1,
+                )
+
+        # Optimise for any smoothing parameters not povided.
         if alpha is None or beta is None or gamma is None:
-            # TODO: Bundle params together
             error_metric_func = ErrorMetricRegistry.get(
                 optimisation_metric or "MSE",
             )
-            # TODO: Need to validate params if required.
+
             alpha, beta, gamma = (
                 TripleExponentialSmoothing._find_optimal_parameters(
                     ts=ts,
@@ -92,26 +105,6 @@ class TripleExponentialSmoothing(BaseForecaster):
                     trend_type=trend_type_member,
                     seasonal_type=seasonal_type_member,
                 )
-            )
-
-        else:
-            alpha = utils.validate_float_within_inclusive_bounds(
-                name="alpha",
-                value=alpha,
-                min_value=0,
-                max_value=1,
-            )
-            beta = utils.validate_float_within_inclusive_bounds(
-                name="beta",
-                value=beta,
-                min_value=0,
-                max_value=1,
-            )
-            gamma = utils.validate_float_within_inclusive_bounds(
-                name="gamma",
-                value=gamma,
-                min_value=0,
-                max_value=1,
             )
 
         lvl_final, trend_final, seasonal_final, ts_fitted = (
@@ -212,7 +205,7 @@ class TripleExponentialSmoothing(BaseForecaster):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )
-            raise ValueError(err_msg)
+            raise RuntimeError(err_msg)
 
         return self._fitted_model_result
 

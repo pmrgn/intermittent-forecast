@@ -3,6 +3,7 @@
 import itertools
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 
 from intermittent_forecast.croston import CRO, SBA, SBJ, TSB
@@ -18,7 +19,7 @@ def basic_time_series() -> list[float]:
     return [0, 0, 3, 0, 4, 0, 0, 0, 2, 0]
 
 
-def test_all_zero_series() -> None:
+def test_all_zero_ts_raises_error() -> None:
     """Test a time-series with all zero values raises a ValueError."""
     ts = [0.0, 0.0, 0.0, 0.0]
     with pytest.raises(
@@ -28,7 +29,7 @@ def test_all_zero_series() -> None:
         CRO().fit(ts=ts)
 
 
-def test_single_value_series() -> None:
+def test_single_value_non_zero_ts_raises_error() -> None:
     """Test a time-series with a single non-zero value raises a ValueError."""
     ts = [0.0, 0.0, 0.0, 2.0]
     with pytest.raises(
@@ -36,6 +37,61 @@ def test_single_value_series() -> None:
         match="at least two non-zero values",
     ):
         CRO().fit(ts=ts)
+
+
+def test_two_dimensional_array_raises_error() -> None:
+    """Test a time-series with a single non-zero value raises a ValueError."""
+    ts = [[1, 2, 3], [4, 5, 6]]
+    with pytest.raises(
+        ValueError,
+        match="must be 1-dimensional",
+    ):
+        CRO().fit(ts=ts)
+
+
+def test_invalid_ts_type_raises_error() -> None:
+    """Test a time-series with a single non-zero value raises a ValueError."""
+    ts = "foo bar"
+    with pytest.raises(
+        TypeError,
+        match="must be a list or numpy array",
+    ):
+        CRO().fit(ts=ts)
+
+
+def test_calling_forecast_before_fit_raises_error() -> None:
+    """Test a time-series with a single non-zero value raises a ValueError."""
+    with pytest.raises(
+        RuntimeError,
+        match="Model has not been fitted yet",
+    ):
+        CRO().forecast(start=0, end=1)
+
+
+def test_invalid_alpha_raises_error(
+    basic_time_series: npt.NDArray[np.float64],
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="out of bounds",
+    ):
+        CRO().fit(ts=basic_time_series, beta=3)
+
+
+def test_invalid_optimisation_metric_raises_error(
+    basic_time_series: npt.NDArray[np.float64],
+) -> None:
+    invalid_metric = "Foo Bar"
+    with pytest.raises(
+        ValueError,
+        match=f"Error metric '{invalid_metric}' not found",
+    ):
+        CRO().fit(ts=basic_time_series, optimisation_metric=invalid_metric)
+
+
+"""
+Passing invalid params, ts, start, end
+"""
 
 
 def test_croston_forecast(basic_time_series: list[float]) -> None:
@@ -196,7 +252,9 @@ def test_optimised_forecast_error_less_than_non_optimised(
     )
 
     forecast_optimised = (
-        CRO().fit(ts=ts, metric=error_metric).forecast(start=0, end=(len_ts))
+        CRO()
+        .fit(ts=ts, optimisation_metric=error_metric)
+        .forecast(start=0, end=(len_ts))
     )
     # Get the error metric function from the string
     error_metric_func = ErrorMetricRegistry.get(error_metric)

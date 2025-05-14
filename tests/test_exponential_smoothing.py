@@ -277,3 +277,12 @@ def test_partial_optimisation(ts_all_positive: npt.NDArray[np.float64]) -> None:
     if alpha != alpha_fitted:
         err_msg = f"Expected alpha to be {alpha}. Got: {alpha_fitted} "
         raise ValueError(err_msg)
+
+
+def test_calling_forecast_before_fit_raises_error() -> None:
+    """Test calling the forecast method before fit raises an error."""
+    with pytest.raises(
+        RuntimeError,
+        match="Model has not been fitted yet",
+    ):
+        TripleExponentialSmoothing().forecast(start=0, end=1)

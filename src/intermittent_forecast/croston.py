@@ -37,29 +37,33 @@ class CrostonVariant(BaseForecaster):
         ts: npt.NDArray[np.float64],
         alpha: float | None = None,
         beta: float | None = None,
-        metric: str = "MSE",
+        optimisation_metric: str = "MSE",
     ) -> CrostonVariant:
         """Fit the model to the time-series."""
+        # Validate time series.
         ts = utils.validate_time_series(ts)
+
+        # Validate any provided smoothing parameters.
+        for param, param_str in zip([alpha, beta], ["alpha", "beta"]):
+            if param is not None:
+                utils.validate_float_within_inclusive_bounds(
+                    name=param_str,
+                    value=param,
+                    min_value=0,
+                    max_value=1,
+                )
+
+        # Optimise for any smoothing parameters not povided.
         if alpha is None or beta is None:
+            error_metric_func = ErrorMetricRegistry.get(
+                optimisation_metric or "MSE",
+            )
+
             alpha, beta = self._find_optimal_parameters(
                 ts=ts,
                 alpha=alpha,
                 beta=beta,
-                metric=metric,
-            )
-        else:
-            alpha = utils.validate_float_within_inclusive_bounds(
-                name="alpha",
-                value=alpha,
-                min_value=0,
-                max_value=1,
-            )
-            beta = utils.validate_float_within_inclusive_bounds(
-                name="beta",
-                value=beta,
-                min_value=0,
-                max_value=1,
+                error_metric_func=error_metric_func,
             )
 
         if self.requires_bias_correction:
@@ -114,7 +118,7 @@ class CrostonVariant(BaseForecaster):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )
-            raise ValueError(err_msg)
+            raise RuntimeError(err_msg)
 
         return self._fitted_model_result
 
@@ -168,10 +172,9 @@ class CrostonVariant(BaseForecaster):
         ts: npt.NDArray[np.float64],
         alpha: float | None,
         beta: float | None,
-        metric: str = "MSE",
+        error_metric_func: Callable[..., float],
     ) -> tuple[float, float]:
         """Optimise the smoothing parameters alpha and beta."""
-        error_metric_func = ErrorMetricRegistry.get(metric)
         # Set the bounds for the smoothing parameters. If values have been
         # passed, then the bounds will be locked at that value. Else they are
         # set at (0,1).
@@ -320,3 +323,8 @@ class TSB(CrostonVariant):
 
         # Offset the forecast by 1
         return np.insert(forecast, 0, np.nan)
+
+
+if __name__ == "__main__":
+    x = CRO().fit(ts=[1, 2, 3], alpha=3)
+    breakpoint()

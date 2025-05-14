@@ -456,3 +456,16 @@ def test_adida_forecast_triple_exponential_smoothing() -> None:
         tes_forecast_intermittent,
         rtol=1e-5,
     )
+
+
+def test_calling_forecast_before_fit_raises_error() -> None:
+    """Test calling the forecast method before fit raises an error."""
+    with pytest.raises(
+        RuntimeError,
+        match="Model has not been fitted yet",
+    ):
+        ADIDA(
+            aggregation_mode="block",
+            disaggregation_mode="seasonal",
+            aggregation_period=1,
+        ).forecast(start=0, end=1)

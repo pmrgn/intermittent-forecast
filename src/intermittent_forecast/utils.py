@@ -115,8 +115,8 @@ def validate_float_within_inclusive_bounds(
         raise ValueError(err_msg)
     if not (min_value <= value <= max_value):
         err_msg = (
-            f"Parameter '{name}'={value} is out of bounds. ",
-            f"Must be between {min_value} and {max_value}.",
+            f"Parameter '{name}'={value} is out of bounds. "
+            f"Must be between {min_value} and {max_value}."
         )
         raise ValueError(err_msg)
     return value
