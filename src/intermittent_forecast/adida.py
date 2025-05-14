@@ -75,11 +75,14 @@ class ADIDA:
             enum_class=DisaggregationMode,
             member_name="disaggregation_mode",
         )
+
         self._config = ADIDAConfig(
             aggregation_period=aggregation_period,
             aggregation_mode=aggregation_mode_member,
             disaggregation_mode=disaggregation_mode_member,
         )
+
+        self._adida_fitted_result: ADIDAFittedResult | None = None
 
     def fit(
         self,
@@ -152,18 +155,25 @@ class ADIDA:
         start = utils.validate_non_negative_integer(start, name="start")
         end = utils.validate_positive_integer(end, name="end")
 
-        # Validate that the model has been fitted.
-        if not hasattr(self, "_adida_fitted_result"):
-            err_msg = ("ADIDA model has not been fitted. Call fit() first.",)
-            raise ValueError(err_msg)
-
         forecast = self._disaggregate(
             config=self._config,
-            fitted_result=self._adida_fitted_result,
+            fitted_result=self.get_fitted_model_result(),
             end=end,
         )
 
         return forecast[start : end + 1]
+
+    def get_fitted_model_result(
+        self,
+    ) -> ADIDAFittedResult:
+        """Get the fitted model."""
+        if not self._adida_fitted_result:
+            err_msg = (
+                "Model has not been fitted yet. Call the `fit` method first."
+            )
+            raise ValueError(err_msg)
+
+        return self._adida_fitted_result
 
     @staticmethod
     def _disaggregate(
@@ -209,12 +219,17 @@ class ADIDA:
                     base_ts_length=len(fitted_result.ts_base),
                 )
 
-        if config.disaggregation_mode == DisaggregationMode.SEASONAL:
-            # Apply the temporal weights to the forecast
-            forecast_disaggregated = ADIDA.apply_temporal_weights(
-                ts=forecast_disaggregated,
-                weights=fitted_result.temporal_weights,
-            )
+        match config.disaggregation_mode:
+            case DisaggregationMode.SEASONAL:
+                # Apply the temporal weights to the forecast
+                forecast_disaggregated = ADIDA.apply_temporal_weights(
+                    ts=forecast_disaggregated,
+                    weights=fitted_result.temporal_weights,
+                )
+
+            case DisaggregationMode.UNIFORM:
+                # A uniform disaggregation requires no further processing.
+                pass
 
         return forecast_disaggregated
 
@@ -240,10 +255,9 @@ class ADIDA:
         # length of the original time series. A sliding aggregation results
         # in a forecast that is shorter than the original time series by
         # (window_size - 1) values.
-        ts_disaggregated_padded = np.concatenate(
+        return np.concatenate(
             (np.full(window_size - 1, np.nan), ts / window_size),
         )
-        return ts_disaggregated_padded
 
     @staticmethod
     def block_aggregation(
