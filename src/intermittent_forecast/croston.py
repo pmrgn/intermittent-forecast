@@ -193,8 +193,8 @@ class CrostonVariant(BaseForecaster):
             args=(ts, error_metric_func),
             bounds=[alpha_bounds, beta_bounds],
         )
-        alpha, beta = min_err.x
-        return alpha, beta
+        optimal_alpha, optimal_beta = min_err.x
+        return optimal_alpha, optimal_beta
 
     @staticmethod
     def _cost_function(
@@ -323,8 +323,3 @@ class TSB(CrostonVariant):
 
         # Offset the forecast by 1
         return np.insert(forecast, 0, np.nan)
-
-
-if __name__ == "__main__":
-    x = CRO().fit(ts=[1, 2, 3], alpha=3)
-    breakpoint()

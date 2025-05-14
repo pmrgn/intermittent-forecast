@@ -78,10 +78,10 @@ def test_invalid_alpha_raises_error(
         CRO().fit(ts=basic_time_series, beta=3)
 
 
-def test_invalid_optimisation_metric_raises_error(
+def test_invalid_optimisation_metric_string_raises_error(
     basic_time_series: npt.NDArray[np.float64],
 ) -> None:
-    invalid_metric = "Foo Bar"
+    invalid_metric = "Foo bar"
     with pytest.raises(
         ValueError,
         match=f"Error metric '{invalid_metric}' not found",
@@ -89,9 +89,28 @@ def test_invalid_optimisation_metric_raises_error(
         CRO().fit(ts=basic_time_series, optimisation_metric=invalid_metric)
 
 
-"""
-Passing invalid params, ts, start, end
-"""
+def test_invalid_optimisation_metric_type_raises_error(
+    basic_time_series: npt.NDArray[np.float64],
+) -> None:
+    invalid_metric = 5
+    with pytest.raises(
+        TypeError,
+        match="Error metric must be a string",
+    ):
+        CRO().fit(ts=basic_time_series, optimisation_metric=invalid_metric)
+
+
+def test_invalid_forecast_start_raises_error(
+    basic_time_series: npt.NDArray[np.float64],
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="start must be 0 or greater",
+    ):
+        CRO().fit(ts=basic_time_series, alpha=1, beta=1).forecast(
+            start=-1,
+            end=1,
+        )
 
 
 def test_croston_forecast(basic_time_series: list[float]) -> None:

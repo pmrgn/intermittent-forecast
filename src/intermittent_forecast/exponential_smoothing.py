@@ -418,9 +418,9 @@ class TripleExponentialSmoothing(BaseForecaster):
                 gamma_bounds,
             ],
         )
-        alpha, beta, gamma = min_err.x
+        optimal_alpha, optimal_beta, optimal_gamma = min_err.x
 
-        return alpha, beta, gamma
+        return optimal_alpha, optimal_beta, optimal_gamma
 
     @staticmethod
     def _cost_function(
