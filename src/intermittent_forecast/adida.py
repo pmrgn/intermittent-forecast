@@ -167,7 +167,10 @@ class ADIDA:
         self,
     ) -> ADIDAFittedResult:
         """Get the fitted model."""
-        if not self._adida_fitted_result:
+        if not self._adida_fitted_result or not isinstance(
+            self._adida_fitted_result,
+            ADIDAFittedResult,
+        ):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )

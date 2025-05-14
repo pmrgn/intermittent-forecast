@@ -200,7 +200,10 @@ class TripleExponentialSmoothing(BaseForecaster):
         self,
     ) -> FittedModelResult:
         """Get the fitted parameters."""
-        if not self._fitted_model_result:
+        if not self._fitted_model_result or not isinstance(
+            self._fitted_model_result,
+            FittedModelResult,
+        ):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )
