@@ -15,12 +15,10 @@ from intermittent_forecast.error_metrics import (
 
 @pytest.fixture
 def basic_time_series() -> list[float]:
-    """Fixture for a basic time series."""
     return [0, 0, 3, 0, 4, 0, 0, 0, 2, 0]
 
 
 def test_all_zero_ts_raises_error() -> None:
-    """Test a time-series with all zero values raises a ValueError."""
     ts = [0.0, 0.0, 0.0, 0.0]
     with pytest.raises(
         ValueError,
@@ -30,7 +28,6 @@ def test_all_zero_ts_raises_error() -> None:
 
 
 def test_single_value_non_zero_ts_raises_error() -> None:
-    """Test a time-series with a single non-zero value raises a ValueError."""
     ts = [0.0, 0.0, 0.0, 2.0]
     with pytest.raises(
         ValueError,
@@ -40,7 +37,6 @@ def test_single_value_non_zero_ts_raises_error() -> None:
 
 
 def test_two_dimensional_array_raises_error() -> None:
-    """Test a time-series with a single non-zero value raises a ValueError."""
     ts = [[1, 2, 3], [4, 5, 6]]
     with pytest.raises(
         ValueError,
@@ -50,7 +46,6 @@ def test_two_dimensional_array_raises_error() -> None:
 
 
 def test_invalid_ts_type_raises_error() -> None:
-    """Test a time-series with a single non-zero value raises a ValueError."""
     ts = "foo bar"
     with pytest.raises(
         TypeError,
@@ -60,7 +55,6 @@ def test_invalid_ts_type_raises_error() -> None:
 
 
 def test_calling_forecast_before_fit_raises_error() -> None:
-    """Test a time-series with a single non-zero value raises a ValueError."""
     with pytest.raises(
         RuntimeError,
         match="Model has not been fitted yet",
@@ -114,7 +108,6 @@ def test_invalid_forecast_start_raises_error(
 
 
 def test_croston_forecast(basic_time_series: list[float]) -> None:
-    """Test the forecast method of the CRO class."""
     forecast = (
         CRO()
         .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
@@ -143,7 +136,6 @@ def test_croston_forecast(basic_time_series: list[float]) -> None:
 
 
 def test_sba_forecast(basic_time_series: list[float]) -> None:
-    """Test the forecast method of the SBA class."""
     forecast = (
         SBA()
         .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
@@ -172,7 +164,6 @@ def test_sba_forecast(basic_time_series: list[float]) -> None:
 
 
 def test_sbj_forecast(basic_time_series: list[float]) -> None:
-    """Test the forecast method of the SBJ class."""
     forecast = (
         SBJ()
         .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
@@ -201,7 +192,6 @@ def test_sbj_forecast(basic_time_series: list[float]) -> None:
 
 
 def test_tsb_forecast(basic_time_series: list[float]) -> None:
-    """Test the forecast method of the TSB class."""
     forecast = (
         TSB()
         .fit(ts=basic_time_series, alpha=0.3, beta=0.1)
