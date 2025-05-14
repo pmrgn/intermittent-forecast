@@ -3,6 +3,7 @@
 import itertools
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 
 from intermittent_forecast.error_metrics import (
@@ -14,11 +15,14 @@ from intermittent_forecast.exponential_smoothing import (
     TripleExponentialSmoothing,
 )
 
-ts_all_positive = np.array([26, 28, 35, 36, 31, 33, 37, 40, 35, 39, 42, 43])
-ts_intermittent = np.array([0, 2, 4, 8, 0, 3, 7, 9, 0, 0, 2, 6, 1, 1.5, 5, 10])
+
+@pytest.fixture
+def ts_all_positive() -> npt.NDArray[np.float64]:
+    """Fixture for a basic positive non-zero time series."""
+    return np.array([26, 28, 35, 36, 31, 33, 37, 40, 35, 39, 42, 43])
 
 
-def test_forecast_add_add() -> None:
+def test_forecast_add_add(ts_all_positive: npt.NDArray[np.float64]) -> None:
     """Test forecasts using additive / additive smoothing."""
     n_obs = len(ts_all_positive)
     model = TripleExponentialSmoothing().fit(
@@ -63,7 +67,7 @@ def test_forecast_add_add() -> None:
     )
 
 
-def test_forecast_add_mul() -> None:
+def test_forecast_add_mul(ts_all_positive: npt.NDArray[np.float64]) -> None:
     """Test forecasts using additive / multiplicative smoothing."""
     n_obs = len(ts_all_positive)
     model = TripleExponentialSmoothing().fit(
@@ -108,7 +112,7 @@ def test_forecast_add_mul() -> None:
     )
 
 
-def test_forecast_mul_mul() -> None:
+def test_forecast_mul_mul(ts_all_positive: npt.NDArray[np.float64]) -> None:
     """Test forecasts using multiplicative / multiplicative smoothing."""
     n_obs = len(ts_all_positive)
     model = TripleExponentialSmoothing().fit(
@@ -147,7 +151,7 @@ def test_forecast_mul_mul() -> None:
     )
 
 
-def test_forecast_mul_add() -> None:
+def test_forecast_mul_add(ts_all_positive: npt.NDArray[np.float64]) -> None:
     """Test forecasts using multiplicative / additive smoothing."""
     n_obs = len(ts_all_positive)
     model = TripleExponentialSmoothing().fit(
@@ -209,6 +213,7 @@ test_cases = [
     test_cases,
 )
 def test_optimised_forecast_error_less_than_non_optimised(
+    ts_all_positive: npt.NDArray[np.float64],
     smoothing_params: dict[str, float],
     smoothing_type: dict[str, SmoothingType],
     error_metric: ErrorMetricFunc,
@@ -260,7 +265,7 @@ def test_optimised_forecast_error_less_than_non_optimised(
         raise ValueError(err_msg)
 
 
-def test_partial_optimisation() -> None:
+def test_partial_optimisation(ts_all_positive: npt.NDArray[np.float64]) -> None:
     """Test a smoothing parameter can be set with optimisation."""
     alpha = 0.35
     model = TripleExponentialSmoothing().fit(

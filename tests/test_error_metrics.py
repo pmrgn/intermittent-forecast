@@ -1,6 +1,7 @@
 """Unit tests for ErrorMetrics class."""
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 
 from intermittent_forecast.error_metrics import (
@@ -8,42 +9,67 @@ from intermittent_forecast.error_metrics import (
     ErrorMetrics,
 )
 
+
 # Sample arrays for testing
-ts = np.array([10.0, 20.0, 30.0, 40.0, 50.0, 0.0, -10.0])
-forecast = np.array([12.0, 18.0, 33.0, 39.0, 48.0, -1.0, 5.0])
+@pytest.fixture
+def ts() -> npt.NDArray[np.float64]:
+    return np.array([10.0, 20.0, 30.0, 40.0, 50.0, 0.0, -10.0])
 
 
-def test_mae() -> None:
+@pytest.fixture
+def forecast() -> npt.NDArray[np.float64]:
+    return np.array([12.0, 18.0, 33.0, 39.0, 48.0, -1.0, 5.0])
+
+
+def test_mae(
+    ts: npt.NDArray[np.float64],
+    forecast: npt.NDArray[np.float64],
+) -> None:
     result = ErrorMetrics.mae(ts, forecast)
     expected = 3.714286
     np.testing.assert_approx_equal(result, expected)
 
 
-def test_mse() -> None:
+def test_mse(
+    ts: npt.NDArray[np.float64],
+    forecast: npt.NDArray[np.float64],
+) -> None:
     result = ErrorMetrics.mse(ts, forecast)
     expected = 35.428574
     np.testing.assert_approx_equal(result, expected)
 
 
-def test_msr() -> None:
+def test_msr(
+    ts: npt.NDArray[np.float64],
+    forecast: npt.NDArray[np.float64],
+) -> None:
     expected = 229.0
     result = ErrorMetrics.msr(ts, forecast)
     np.testing.assert_approx_equal(result, expected)
 
 
-def test_mar() -> None:
+def test_mar(
+    ts: npt.NDArray[np.float64],
+    forecast: npt.NDArray[np.float64],
+) -> None:
     expected = 13.0
     result = ErrorMetrics.mar(ts, forecast)
     np.testing.assert_approx_equal(result, expected)
 
 
-def test_pis() -> None:
+def test_pis(
+    ts: npt.NDArray[np.float64],
+    forecast: npt.NDArray[np.float64],
+) -> None:
     expected = 20.0
     result = ErrorMetrics.pis(ts, forecast)
     np.testing.assert_approx_equal(result, expected)
 
 
-def test_error_metric_registry_retrieves_mae() -> None:
+def test_error_metric_registry_retrieves_mae(
+    ts: npt.NDArray[np.float64],
+    forecast: npt.NDArray[np.float64],
+) -> None:
     mse_func = ErrorMetricRegistry.get("mae")
     result = mse_func(ts, forecast)
     expected = 3.714286

@@ -4,15 +4,16 @@ from __future__ import annotations
 
 from copy import deepcopy
 from enum import Enum
-from typing import Any, TypeVar
+from typing import Any, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
 
 from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import BaseForecaster
-
-T_BaseForecaster = TypeVar("T_BaseForecaster", bound=BaseForecaster)
+from intermittent_forecast.base_forecaster import (
+    BaseForecaster,
+    T_BaseForecaster,
+)
 
 
 class AggregationMode(Enum):
@@ -29,12 +30,23 @@ class DisaggregationMode(Enum):
     UNIFORM = "uniform"
 
 
+class ADIDAConfig(NamedTuple):
+    aggregation_period: int
+    aggregation_mode: AggregationMode
+    disaggregation_mode: DisaggregationMode
+
+
+class ADIDAFittedResult(NamedTuple):
+    aggregated_model: BaseForecaster
+    temporal_weights: npt.NDArray[np.float64]
+    ts_base: npt.NDArray[np.float64]
+
+
 class ADIDA:
     """Aggregate-disaggregate Intermittent Demand Approach."""
 
     def __init__(
         self,
-        model: T_BaseForecaster,
         aggregation_period: int,
         aggregation_mode: str,
         disaggregation_mode: str,
@@ -47,42 +59,82 @@ class ADIDA:
             Forecasting model to use for aggregation.
 
         """
+        aggregation_period = utils.validate_non_negative_integer(
+            value=aggregation_period,
+            name="aggregation_period",
+        )
+
+        aggregation_mode_member = utils.get_enum_member_from_str(
+            member_str=aggregation_mode,
+            enum_class=AggregationMode,
+            member_name="aggregation_mode",
+        )
+
+        disaggregation_mode_member = utils.get_enum_member_from_str(
+            member_str=disaggregation_mode,
+            enum_class=DisaggregationMode,
+            member_name="disaggregation_mode",
+        )
+
+        self._config = ADIDAConfig(
+            aggregation_period=aggregation_period,
+            aggregation_mode=aggregation_mode_member,
+            disaggregation_mode=disaggregation_mode_member,
+        )
+
+        self._adida_fitted_result: ADIDAFittedResult | None = None
+
+    def fit(
+        self,
+        model: T_BaseForecaster,
+        ts: npt.NDArray[np.float64],
+        **kwargs: Any,  # noqa: ANN401
+    ) -> ADIDA:
+        """Fit the model."""
         if not isinstance(model, BaseForecaster):
             err_msg = (
                 "ADIDA model requires a forecasting model.",
                 f"Got: {type(model)}",
             )
             raise TypeError(err_msg)
-        self._base_ts: npt.NDArray[np.float64] | None = None
-        self._aggregated_model = deepcopy(model)
-        self._aggregation_period = aggregation_period
-        self._aggregation_mode = utils.get_enum_member_from_str(
-            member_str=aggregation_mode,
-            enum_class=AggregationMode,
-            member_name="aggregation_mode",
-        )
-        self._disaggregation_mode = utils.get_enum_member_from_str(
-            member_str=disaggregation_mode,
-            enum_class=DisaggregationMode,
-            member_name="disaggregation_mode",
-        )
-        self._temporal_weights: npt.NDArray[np.float64] | None = None
-
-    def fit(
-        self,
-        ts: npt.NDArray[np.float64],
-        **kwargs: Any,  # noqa: ANN401
-    ) -> ADIDA:
-        """Fit the model."""
-        # Cache time series
-        self._base_ts = ts
 
         # Aggregate the time series
-        aggregated_ts = self._aggregate(ts)
+        ts = utils.validate_time_series(ts)
+        match self._config.aggregation_mode:
+            case AggregationMode.SLIDING:
+                aggregated_ts = self.sliding_aggregation(
+                    ts=ts,
+                    window_size=self._config.aggregation_period,
+                )
+            case AggregationMode.BLOCK:
+                aggregated_ts = self.block_aggregation(
+                    ts=ts,
+                    window_size=self._config.aggregation_period,
+                )
+        aggregated_ts = utils.validate_time_series(aggregated_ts)
 
-        self._aggregated_model.fit(
+        # Create a model by copying the original model and fitting it using
+        # the aggregated time series.
+        aggregated_model = deepcopy(model)
+        aggregated_model.fit(
             ts=aggregated_ts,
             **kwargs,
+        )
+
+        # If using a seasonal disaggregation method, calculate the seasonal
+        # weights, which will be used later to disaggregate the forecast.
+        temporal_weights = np.array([])
+        if self._config.disaggregation_mode == DisaggregationMode.SEASONAL:
+            temporal_weights = self.calculate_temporal_weights(
+                ts=ts,
+                cycle_length=self._config.aggregation_period,
+            )
+
+        # Cache results
+        self._adida_fitted_result = ADIDAFittedResult(
+            aggregated_model=aggregated_model,
+            ts_base=ts,
+            temporal_weights=temporal_weights,
         )
 
         return self
@@ -102,43 +154,32 @@ class ADIDA:
         """
         start = utils.validate_non_negative_integer(start, name="start")
         end = utils.validate_positive_integer(end, name="end")
-        # Calculate the number of steps to forecast for the aggregated model.
-        base_steps = end - len(self._base_ts)
-        agg_steps = (base_steps // self._aggregation_period) + 1
-        self._aggregated_forecast = self._aggregated_model.forecast(
-            start=0,
-            end=len(self._base_ts) + agg_steps,
+
+        forecast = self._disaggregate(
+            config=self._config,
+            fitted_result=self.get_fitted_model_result(),
+            end=end,
         )
-        forecast = self._disaggregate()
+
         return forecast[start : end + 1]
 
-    def _aggregate(
+    def get_fitted_model_result(
         self,
-        ts: npt.NDArray[np.float64],
-    ) -> npt.NDArray[np.float64]:
-        """Aggregate the time-series using a specified window size.
-
-        Parameters
-        ----------
-        ts : npt.NDArray[np.float64]
-            Time-series to aggregate.
-
-        """
-        if self._aggregation_mode == AggregationMode.SLIDING:
-            _aggregated_ts = self.sliding_aggregation(
-                ts=ts,
-                window_size=self._aggregation_period,
+    ) -> ADIDAFittedResult:
+        """Get the fitted model."""
+        if not self._adida_fitted_result:
+            err_msg = (
+                "Model has not been fitted yet. Call the `fit` method first."
             )
-        elif self._aggregation_mode == AggregationMode.BLOCK:
-            _aggregated_ts = self.block_aggregation(
-                ts=ts,
-                window_size=self._aggregation_period,
-            )
+            raise ValueError(err_msg)
 
-        return utils.validate_time_series(_aggregated_ts)
+        return self._adida_fitted_result
 
+    @staticmethod
     def _disaggregate(
-        self,
+        config: ADIDAConfig,
+        fitted_result: ADIDAFittedResult,
+        end: int,
     ) -> npt.NDArray[np.float64]:
         """Disaggregate the forecasted values.
 
@@ -153,46 +194,44 @@ class ADIDA:
             Disaggregated forecasted values.
 
         """
+        # Calculate the number of steps to forecast for the aggregated model.
+        base_steps = end - len(fitted_result.ts_base)
+        agg_steps = (base_steps // config.aggregation_period) + 1
+        aggregated_forecast = fitted_result.aggregated_model.forecast(
+            start=0,
+            end=len(fitted_result.ts_base) + agg_steps,
+        )
+
         # Prepare for disaggregation, which depends on how the forecast was
         # aggregated.
-        if self._aggregation_mode == AggregationMode.SLIDING:
-            forecast = self.sliding_disaggregation(
-                ts=self._aggregated_forecast,
-                window_size=self._aggregation_period,
-            )
+        match config.aggregation_mode:
+            case AggregationMode.SLIDING:
+                forecast_disaggregated = ADIDA.sliding_disaggregation(
+                    ts=aggregated_forecast,
+                    window_size=config.aggregation_period,
+                )
 
-        elif self._aggregation_mode == AggregationMode.BLOCK:
-            # Block aggregation will return the series to
-            forecast = self.block_disaggregation(
-                aggregated_ts=self._aggregated_forecast,
-                window_size=self._aggregation_period,
-                base_ts_length=len(self._base_ts),
-            )
+            case AggregationMode.BLOCK:
+                # Block aggregation will return the series to
+                forecast_disaggregated = ADIDA.block_disaggregation(
+                    aggregated_ts=aggregated_forecast,
+                    window_size=config.aggregation_period,
+                    base_ts_length=len(fitted_result.ts_base),
+                )
 
-        else:
-            err_msg = (
-                "ADIDA disaggregation only supports sliding or block "
-                "aggregation."
-            )
-            raise ValueError(err_msg)
+        match config.disaggregation_mode:
+            case DisaggregationMode.SEASONAL:
+                # Apply the temporal weights to the forecast
+                forecast_disaggregated = ADIDA.apply_temporal_weights(
+                    ts=forecast_disaggregated,
+                    weights=fitted_result.temporal_weights,
+                )
 
-        if self._disaggregation_mode == DisaggregationMode.SEASONAL:
-            self._temporal_weights = self.calculate_temporal_weights(
-                ts=self._base_ts,
-                cycle_length=self._aggregation_period,
-            )
-            # Apply the temporal weights to the forecast
-            ret = self.apply_temporal_weights(
-                ts=forecast,
-                weights=self._temporal_weights,
-            )
+            case DisaggregationMode.UNIFORM:
+                # A uniform disaggregation requires no further processing.
+                pass
 
-        elif self._disaggregation_mode == DisaggregationMode.UNIFORM:
-            # Implement uniform disaggregation logic here
-            # TODO: Cleanup
-            ret = forecast
-
-        return ret
+        return forecast_disaggregated
 
     @staticmethod
     def sliding_aggregation(
@@ -216,10 +255,9 @@ class ADIDA:
         # length of the original time series. A sliding aggregation results
         # in a forecast that is shorter than the original time series by
         # (window_size - 1) values.
-        ts_disaggregated_padded = np.concatenate(
+        return np.concatenate(
             (np.full(window_size - 1, np.nan), ts / window_size),
         )
-        return ts_disaggregated_padded
 
     @staticmethod
     def block_aggregation(

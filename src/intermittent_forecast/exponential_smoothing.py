@@ -45,81 +45,6 @@ class TripleExponentialSmoothing(BaseForecaster):
         super().__init__()
         self._fitted_model_result: FittedModelResult | None = None
 
-    def forecast(
-        self,
-        start: int,
-        end: int,
-    ) -> npt.NDArray[np.float64]:
-        """Forecast the time series using the fitted parameters."""
-        # Unpack the fitted values
-        fitted_params = self.get_fitted_model_result()
-        trend_type = fitted_params.trend_type
-        seasonal_type = fitted_params.seasonal_type
-        period = fitted_params.period
-        lvl_final = fitted_params.lvl_final
-        trend_final = fitted_params.trend_final
-        seasonal_final = fitted_params.seasonal_final
-        ts_base = fitted_params.ts_base
-        ts_fitted = fitted_params.ts_fitted
-
-        # Determine the forecasting horizon if required
-        h = end - len(ts_base) + 1
-        if h > 0:
-            # Define trend functions, which differ based on additive or
-            # multiplicative trend type, i.e. for additive smoothing the trend
-            # final value is added to the level at each step, i.
-            trend_funcs: dict[
-                SmoothingType,
-                Callable[[float, float, int], float],
-            ] = {
-                SmoothingType.ADD: lambda lvl, trend, i: lvl + i * trend,
-                SmoothingType.MUL: lambda lvl, trend, i: lvl * (trend**i),
-            }
-
-            # A seasonal combination functions will be used to combine the now
-            # adjusted level with the seasonal component. The seasonal
-            # component is either added or multiplied to the level, depending on
-            # the seasonal type.
-            seasonal_combine_funcs: dict[
-                SmoothingType,
-                Callable[[float, float], float],
-            ] = {
-                SmoothingType.ADD: lambda lvl_adjusted, seasonal: lvl_adjusted
-                + seasonal,
-                SmoothingType.MUL: lambda lvl_adjusted, seasonal: lvl_adjusted
-                * seasonal,
-            }
-
-            # Get the correct function based on smoothing type.
-            apply_trend = trend_funcs[trend_type]
-            apply_seasonal = seasonal_combine_funcs[seasonal_type]
-
-            # Generate forecast
-            forecast = [
-                apply_seasonal(
-                    apply_trend(lvl_final, trend_final, i),
-                    seasonal_final[(i - 1) % period],
-                )
-                for i in range(1, h + 1)
-            ]
-
-            # Append the out of sample forecast to the fitted values.
-            ts_fitted = np.concatenate((ts_fitted, np.array(forecast)))
-
-        return ts_fitted[start : end + 1]
-
-    def get_fitted_model_result(
-        self,
-    ) -> FittedModelResult:
-        """Get the fitted parameters."""
-        if not self._fitted_model_result:
-            err_msg = (
-                "Model has not been fitted yet. Call the `fit` method first."
-            )
-            raise ValueError(err_msg)
-
-        return self._fitted_model_result
-
     def fit(
         self,
         ts: npt.NDArray[np.float64],
@@ -215,6 +140,81 @@ class TripleExponentialSmoothing(BaseForecaster):
         )
 
         return self
+
+    def forecast(
+        self,
+        start: int,
+        end: int,
+    ) -> npt.NDArray[np.float64]:
+        """Forecast the time series using the fitted parameters."""
+        # Unpack the fitted values
+        fitted_params = self.get_fitted_model_result()
+        trend_type = fitted_params.trend_type
+        seasonal_type = fitted_params.seasonal_type
+        period = fitted_params.period
+        lvl_final = fitted_params.lvl_final
+        trend_final = fitted_params.trend_final
+        seasonal_final = fitted_params.seasonal_final
+        ts_base = fitted_params.ts_base
+        ts_fitted = fitted_params.ts_fitted
+
+        # Determine the forecasting horizon if required
+        h = end - len(ts_base) + 1
+        if h > 0:
+            # Define trend functions, which differ based on additive or
+            # multiplicative trend type, i.e. for additive smoothing the trend
+            # final value is added to the level at each step, i.
+            trend_funcs: dict[
+                SmoothingType,
+                Callable[[float, float, int], float],
+            ] = {
+                SmoothingType.ADD: lambda lvl, trend, i: lvl + i * trend,
+                SmoothingType.MUL: lambda lvl, trend, i: lvl * (trend**i),
+            }
+
+            # A seasonal combination functions will be used to combine the now
+            # adjusted level with the seasonal component. The seasonal
+            # component is either added or multiplied to the level, depending on
+            # the seasonal type.
+            seasonal_combine_funcs: dict[
+                SmoothingType,
+                Callable[[float, float], float],
+            ] = {
+                SmoothingType.ADD: lambda lvl_adjusted, seasonal: lvl_adjusted
+                + seasonal,
+                SmoothingType.MUL: lambda lvl_adjusted, seasonal: lvl_adjusted
+                * seasonal,
+            }
+
+            # Get the correct function based on smoothing type.
+            apply_trend = trend_funcs[trend_type]
+            apply_seasonal = seasonal_combine_funcs[seasonal_type]
+
+            # Generate forecast
+            forecast = [
+                apply_seasonal(
+                    apply_trend(lvl_final, trend_final, i),
+                    seasonal_final[(i - 1) % period],
+                )
+                for i in range(1, h + 1)
+            ]
+
+            # Append the out of sample forecast to the fitted values.
+            ts_fitted = np.concatenate((ts_fitted, np.array(forecast)))
+
+        return ts_fitted[start : end + 1]
+
+    def get_fitted_model_result(
+        self,
+    ) -> FittedModelResult:
+        """Get the fitted parameters."""
+        if not self._fitted_model_result:
+            err_msg = (
+                "Model has not been fitted yet. Call the `fit` method first."
+            )
+            raise ValueError(err_msg)
+
+        return self._fitted_model_result
 
     @staticmethod
     def _compute_exponential_smoothing(
