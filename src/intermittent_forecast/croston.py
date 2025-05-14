@@ -32,39 +32,6 @@ class CrostonVariant(BaseForecaster):
         super().__init__()
         self._fitted_model_result: FittedModelResult | None = None
 
-    def forecast(
-        self,
-        start: int,
-        end: int,
-    ) -> npt.NDArray[np.float64]:
-        """Forecast the time series using the fitted parameters."""
-        start = utils.validate_non_negative_integer(start, name="start")
-        end = utils.validate_positive_integer(end, name="end")
-
-        # Unpack the fitted values
-        fitted_values = self.get_fitted_model_result()
-        forecast = fitted_values.ts_fitted
-
-        if len(forecast) < end:
-            # Append with the out of sample forecast
-            forecast = np.concatenate(
-                (forecast, np.full(end - len(forecast), forecast[-1])),
-            )
-
-        return forecast[start:end]
-
-    def get_fitted_model_result(
-        self,
-    ) -> FittedModelResult:
-        """Get the fitted parameters."""
-        if not self._fitted_model_result:
-            err_msg = (
-                "Model has not been fitted yet. Call the `fit` method first."
-            )
-            raise ValueError(err_msg)
-
-        return self._fitted_model_result
-
     def fit(
         self,
         ts: npt.NDArray[np.float64],
@@ -117,6 +84,39 @@ class CrostonVariant(BaseForecaster):
         )
 
         return self
+
+    def forecast(
+        self,
+        start: int,
+        end: int,
+    ) -> npt.NDArray[np.float64]:
+        """Forecast the time series using the fitted parameters."""
+        start = utils.validate_non_negative_integer(start, name="start")
+        end = utils.validate_positive_integer(end, name="end")
+
+        # Unpack the fitted values
+        fitted_values = self.get_fitted_model_result()
+        forecast = fitted_values.ts_fitted
+
+        if len(forecast) < end:
+            # Append with the out of sample forecast
+            forecast = np.concatenate(
+                (forecast, np.full(end - len(forecast), forecast[-1])),
+            )
+
+        return forecast[start:end]
+
+    def get_fitted_model_result(
+        self,
+    ) -> FittedModelResult:
+        """Get the fitted parameters."""
+        if not self._fitted_model_result:
+            err_msg = (
+                "Model has not been fitted yet. Call the `fit` method first."
+            )
+            raise ValueError(err_msg)
+
+        return self._fitted_model_result
 
     @staticmethod
     def _compute_forecast(
