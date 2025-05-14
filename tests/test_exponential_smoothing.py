@@ -18,7 +18,6 @@ from intermittent_forecast.exponential_smoothing import (
 
 @pytest.fixture
 def ts_all_positive() -> npt.NDArray[np.float64]:
-    """Fixture for a basic positive non-zero time series."""
     return np.array([26, 28, 35, 36, 31, 33, 37, 40, 35, 39, 42, 43])
 
 
