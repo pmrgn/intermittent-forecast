@@ -25,6 +25,7 @@ plugins = ["numpy.typing.mypy_plugin"]
 [tool.ruff]
 select = ["ALL"]
 line-length = 80
+per-file-ignores = { "tests/*" = ["D103"] }
 
 [tool.ruff.lint.pylint]
 max-args = 6

@@ -13,31 +13,26 @@ from intermittent_forecast.exponential_smoothing import (
 
 @pytest.fixture
 def time_series_linear() -> npt.NDArray[np.float64]:
-    """Fixture for a basic time series."""
     return np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
 
 @pytest.fixture
 def time_series_cyclical() -> npt.NDArray[np.float64]:
-    """Fixture for a basic time series."""
     return np.array([1, 2, 3, 4, 5, 1, 2, 3, 4, 5])
 
 
 @pytest.fixture
 def even_intermittent_time_series() -> npt.NDArray[np.float64]:
-    """Fixture for a basic time series."""
     return np.array([0, 0, 3, 0, 0, 5, 0, 0, 0, 2, 0, 0, 0, 0, 4, 0])
 
 
 @pytest.fixture
 def even_aggregated_time_series() -> npt.NDArray[np.float64]:
-    """Fixture for a basic time series."""
     return np.array([4, 7, 0, 9])
 
 
 @pytest.fixture
 def odd_time_series() -> npt.NDArray[np.float64]:
-    """Fixture for a basic time series."""
     return np.array([0, 3, 0, 0, 5, 0, 0, 0, 2, 0, 0, 0, 0, 4, 0])
 
 
@@ -53,12 +48,11 @@ def odd_time_series() -> npt.NDArray[np.float64]:
         (9, [6]),
     ],
 )
-def test_aggregation_even_block(
+def test_block_aggregation_even_ts(
     size: int,
     expected: npt.NDArray[np.float64],
     even_intermittent_time_series: npt.NDArray[np.float64],
 ) -> None:
-    """Test non-overlapping aggregation."""
     result = ADIDA.block_aggregation(
         even_intermittent_time_series,
         window_size=size,
@@ -78,12 +72,11 @@ def test_aggregation_even_block(
         (9, [6]),
     ],
 )
-def test_aggregation_odd_block(
+def test_block_aggregation_odd_ts(
     size: int,
     expected: npt.NDArray[np.float64],
     odd_time_series: npt.NDArray[np.float64],
 ) -> None:
-    """Test non-overlapping aggregation."""
     result = ADIDA.block_aggregation(
         odd_time_series,
         window_size=size,
@@ -103,12 +96,11 @@ def test_aggregation_odd_block(
         (16, [14]),
     ],
 )
-def test_aggregation_even_overlapping(
+def test_sliding_aggregation_even_ts(
     size: int,
     expected: npt.NDArray[np.float64],
     even_intermittent_time_series: npt.NDArray[np.float64],
 ) -> None:
-    """Test non-overlapping aggregation."""
     result = ADIDA.sliding_aggregation(
         even_intermittent_time_series,
         window_size=size,
@@ -153,12 +145,11 @@ def test_aggregation_even_overlapping(
         ),
     ],
 )
-def test_disaggregation_block(
+def test_block_disaggregation(
     window_size: int,
     base_ts_length: int,
     expected: npt.NDArray[np.float64],
 ) -> None:
-    """Test non-overlapping aggregation."""
     aggregated_ts = np.array([4, 8, 0, 9])
     result = ADIDA.block_disaggregation(
         aggregated_ts=aggregated_ts,
@@ -176,11 +167,10 @@ def test_disaggregation_block(
         (3, [np.nan, np.nan, 1.333333, 2.333333, 0.666666, 3, 0, 2]),
     ],
 )
-def test_disaggregation_sliding(
+def test_sliding_disaggregation(
     size: int,
     expected: npt.NDArray[np.float64],
 ) -> None:
-    """Test non-overlapping aggregation."""
     ts = np.array([4, 7, 2, 9, 0, 6])
     result = ADIDA.sliding_disaggregation(
         ts=ts,
@@ -219,7 +209,6 @@ def test_calculate_temporal_weights(
     cycle: int,
     expected: npt.NDArray[np.float64],
 ) -> None:
-    """Test computing temporal distribution."""
     result = ADIDA.calculate_temporal_weights(
         ts=ts,
         cycle_length=cycle,
@@ -247,12 +236,11 @@ def test_calculate_temporal_weights(
         ),
     ],
 )
-def test_apply_temporal_weights(
+def test_apply_temporal_weights_to_time_series(
     ts: npt.NDArray[np.float64],
     temporal_weights: int,
     expected: npt.NDArray[np.float64],
 ) -> None:
-    """Test applying a temporal distribution to a time-series."""
     result = ADIDA.apply_temporal_weights(
         ts=ts,
         weights=temporal_weights,
@@ -277,7 +265,6 @@ def test_calculate_and_apply_temporal_weights(
     ts_agg: npt.NDArray[np.float64],
     expected: npt.NDArray[np.float64],
 ) -> None:
-    """Test applying a temporal distribution to a time-series."""
     temporal_weights = ADIDA.calculate_temporal_weights(
         ts=ts,
         cycle_length=cycle,
@@ -297,12 +284,11 @@ def test_calculate_and_apply_temporal_weights(
         (3, [np.nan, np.nan, np.nan, 3, 3, 3, 6, 6, 6, 9, 9, 9, 9]),
     ],
 )
-def test_adida_forecast_croston_block_uniform(
+def test_adida_forecast_croston_block_aggregation(
     time_series_linear: npt.NDArray[np.float64],
     size: int,
     expected: list[np.float64],
 ) -> None:
-    """Test the ADIDA aggregation method."""
     adida_model = ADIDA(
         aggregation_period=size,
         aggregation_mode="block",
@@ -347,12 +333,11 @@ def test_adida_forecast_croston_block_uniform(
         ),
     ],
 )
-def test_adida_forecast_croston_block_seasonal(
+def test_adida_forecast_croston_block_aggregation_seasonal_disaggregation(
     time_series_linear: npt.NDArray[np.float64],
     size: int,
     expected: list[np.float64],
 ) -> None:
-    """Test the ADIDA aggregation method."""
     adida_model = ADIDA(
         aggregation_period=size,
         aggregation_mode="block",
@@ -371,10 +356,9 @@ def test_adida_forecast_croston_block_seasonal(
     )
 
 
-def test_adida_forecast_croston_cyclical_block_seasonal(
+def test_adida_forecast_croston_cyclical_time_series(
     time_series_cyclical: npt.NDArray[np.float64],
 ) -> None:
-    """Test the ADIDA aggregation method."""
     aggregation_period = 5
     adida_model = ADIDA(
         aggregation_period=aggregation_period,
@@ -413,7 +397,6 @@ def test_adida_forecast_croston_cyclical_block_seasonal(
 
 
 def test_adida_forecast_triple_exponential_smoothing() -> None:
-    """Test the ADIDA aggregation method."""
     # Generate an intermittent array from a non-zero cyclical series.
     cyclical_series = np.array(
         [1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 6, 4, 5, 6, 7, 5, 6, 7, 8],
@@ -459,7 +442,6 @@ def test_adida_forecast_triple_exponential_smoothing() -> None:
 
 
 def test_calling_forecast_before_fit_raises_error() -> None:
-    """Test calling the forecast method before fit raises an error."""
     with pytest.raises(
         RuntimeError,
         match="Model has not been fitted yet",

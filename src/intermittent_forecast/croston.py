@@ -98,12 +98,12 @@ class CrostonVariant(BaseForecaster):
         start = utils.validate_non_negative_integer(start, name="start")
         end = utils.validate_positive_integer(end, name="end")
 
-        # Unpack the fitted values
+        # Get the fitted model result.
         fitted_values = self.get_fitted_model_result()
         forecast = fitted_values.ts_fitted
 
         if len(forecast) < end:
-            # Append with the out of sample forecast
+            # Append with the out of sample forecast.
             forecast = np.concatenate(
                 (forecast, np.full(end - len(forecast), forecast[-1])),
             )
