@@ -49,8 +49,8 @@ class TripleExponentialSmoothing(BaseForecaster):
         self,
         ts: npt.NDArray[np.float64],
         period: int,
-        trend_type: str = SmoothingType.ADD.value,
-        seasonal_type: str = SmoothingType.ADD.value,
+        trend_type: str = "additive",
+        seasonal_type: str = "additive",
         alpha: float | None = None,
         beta: float | None = None,
         gamma: float | None = None,
@@ -75,12 +75,25 @@ class TripleExponentialSmoothing(BaseForecaster):
 
         ts = utils.validate_time_series(ts)
 
+        # Validate any provided smoothing parameters.
+        for param, param_str in zip(
+            [alpha, beta, gamma],
+            ["alpha", "beta", "gamma"],
+        ):
+            if param is not None:
+                utils.validate_float_within_inclusive_bounds(
+                    name=param_str,
+                    value=param,
+                    min_value=0,
+                    max_value=1,
+                )
+
+        # Optimise for any smoothing parameters not povided.
         if alpha is None or beta is None or gamma is None:
-            # TODO: Bundle params together
             error_metric_func = ErrorMetricRegistry.get(
                 optimisation_metric or "MSE",
             )
-            # TODO: Need to validate params if required.
+
             alpha, beta, gamma = (
                 TripleExponentialSmoothing._find_optimal_parameters(
                     ts=ts,
@@ -92,26 +105,6 @@ class TripleExponentialSmoothing(BaseForecaster):
                     trend_type=trend_type_member,
                     seasonal_type=seasonal_type_member,
                 )
-            )
-
-        else:
-            alpha = utils.validate_float_within_inclusive_bounds(
-                name="alpha",
-                value=alpha,
-                min_value=0,
-                max_value=1,
-            )
-            beta = utils.validate_float_within_inclusive_bounds(
-                name="beta",
-                value=beta,
-                min_value=0,
-                max_value=1,
-            )
-            gamma = utils.validate_float_within_inclusive_bounds(
-                name="gamma",
-                value=gamma,
-                min_value=0,
-                max_value=1,
             )
 
         lvl_final, trend_final, seasonal_final, ts_fitted = (
@@ -147,19 +140,12 @@ class TripleExponentialSmoothing(BaseForecaster):
         end: int,
     ) -> npt.NDArray[np.float64]:
         """Forecast the time series using the fitted parameters."""
-        # Unpack the fitted values
+        # Get the fitted model result
         fitted_params = self.get_fitted_model_result()
-        trend_type = fitted_params.trend_type
-        seasonal_type = fitted_params.seasonal_type
-        period = fitted_params.period
-        lvl_final = fitted_params.lvl_final
-        trend_final = fitted_params.trend_final
-        seasonal_final = fitted_params.seasonal_final
-        ts_base = fitted_params.ts_base
         ts_fitted = fitted_params.ts_fitted
 
         # Determine the forecasting horizon if required
-        h = end - len(ts_base) + 1
+        h = end - len(fitted_params.ts_base) + 1
         if h > 0:
             # Define trend functions, which differ based on additive or
             # multiplicative trend type, i.e. for additive smoothing the trend
@@ -187,14 +173,20 @@ class TripleExponentialSmoothing(BaseForecaster):
             }
 
             # Get the correct function based on smoothing type.
-            apply_trend = trend_funcs[trend_type]
-            apply_seasonal = seasonal_combine_funcs[seasonal_type]
+            apply_trend = trend_funcs[fitted_params.trend_type]
+            apply_seasonal = seasonal_combine_funcs[fitted_params.seasonal_type]
 
             # Generate forecast
             forecast = [
                 apply_seasonal(
-                    apply_trend(lvl_final, trend_final, i),
-                    seasonal_final[(i - 1) % period],
+                    apply_trend(
+                        fitted_params.lvl_final,
+                        fitted_params.trend_final,
+                        i,
+                    ),
+                    fitted_params.seasonal_final[
+                        (i - 1) % fitted_params.period
+                    ],
                 )
                 for i in range(1, h + 1)
             ]
@@ -212,7 +204,7 @@ class TripleExponentialSmoothing(BaseForecaster):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )
-            raise ValueError(err_msg)
+            raise RuntimeError(err_msg)
 
         return self._fitted_model_result
 
@@ -236,12 +228,6 @@ class TripleExponentialSmoothing(BaseForecaster):
                 fn = TripleExponentialSmoothing._calculate_mul_add_smoothing
             case SmoothingType.MUL, SmoothingType.MUL:
                 fn = TripleExponentialSmoothing._calculate_mul_mul_smoothing
-            case _:
-                err_msg = (
-                    f"Invalid combination of trend_type and seasonal_type: "
-                    f"{trend_type}, {seasonal_type}"
-                )
-                raise ValueError(err_msg)
 
         return fn(
             ts=ts,
@@ -425,9 +411,9 @@ class TripleExponentialSmoothing(BaseForecaster):
                 gamma_bounds,
             ],
         )
-        alpha, beta, gamma = min_err.x
+        optimal_alpha, optimal_beta, optimal_gamma = min_err.x
 
-        return alpha, beta, gamma
+        return optimal_alpha, optimal_beta, optimal_gamma
 
     @staticmethod
     def _cost_function(

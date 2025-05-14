@@ -37,6 +37,10 @@ class ErrorMetricRegistry:
     @classmethod
     def get(cls, name: str) -> ErrorMetricFunc:
         """Retrieve a registered error metric function by name."""
+        if not isinstance(name, str):
+            err_msg = "Error metric must be a string."
+            raise TypeError(err_msg)
+
         try:
             cls._registry[name.upper()]
         except KeyError:

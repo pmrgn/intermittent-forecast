@@ -171,7 +171,7 @@ class ADIDA:
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )
-            raise ValueError(err_msg)
+            raise RuntimeError(err_msg)
 
         return self._adida_fitted_result
 

@@ -66,7 +66,7 @@ def test_pis(
     np.testing.assert_approx_equal(result, expected)
 
 
-def test_error_metric_registry_retrieves_mae(
+def test_get_metric_from_str_for_mae(
     ts: npt.NDArray[np.float64],
     forecast: npt.NDArray[np.float64],
 ) -> None:
@@ -76,7 +76,7 @@ def test_error_metric_registry_retrieves_mae(
     np.testing.assert_approx_equal(result, expected)
 
 
-def test_error_metric_registry_retrieval_fails() -> None:
+def test_raises_when_metric_not_found() -> None:
     with pytest.raises(
         ValueError,
         match="'foo bar' not found",
