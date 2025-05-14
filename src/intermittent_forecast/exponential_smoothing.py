@@ -140,19 +140,12 @@ class TripleExponentialSmoothing(BaseForecaster):
         end: int,
     ) -> npt.NDArray[np.float64]:
         """Forecast the time series using the fitted parameters."""
-        # Unpack the fitted values
+        # Get the fitted model result
         fitted_params = self.get_fitted_model_result()
-        trend_type = fitted_params.trend_type
-        seasonal_type = fitted_params.seasonal_type
-        period = fitted_params.period
-        lvl_final = fitted_params.lvl_final
-        trend_final = fitted_params.trend_final
-        seasonal_final = fitted_params.seasonal_final
-        ts_base = fitted_params.ts_base
         ts_fitted = fitted_params.ts_fitted
 
         # Determine the forecasting horizon if required
-        h = end - len(ts_base) + 1
+        h = end - len(fitted_params.ts_base) + 1
         if h > 0:
             # Define trend functions, which differ based on additive or
             # multiplicative trend type, i.e. for additive smoothing the trend
@@ -180,14 +173,20 @@ class TripleExponentialSmoothing(BaseForecaster):
             }
 
             # Get the correct function based on smoothing type.
-            apply_trend = trend_funcs[trend_type]
-            apply_seasonal = seasonal_combine_funcs[seasonal_type]
+            apply_trend = trend_funcs[fitted_params.trend_type]
+            apply_seasonal = seasonal_combine_funcs[fitted_params.seasonal_type]
 
             # Generate forecast
             forecast = [
                 apply_seasonal(
-                    apply_trend(lvl_final, trend_final, i),
-                    seasonal_final[(i - 1) % period],
+                    apply_trend(
+                        fitted_params.lvl_final,
+                        fitted_params.trend_final,
+                        i,
+                    ),
+                    fitted_params.seasonal_final[
+                        (i - 1) % fitted_params.period
+                    ],
                 )
                 for i in range(1, h + 1)
             ]
