@@ -229,12 +229,6 @@ class TripleExponentialSmoothing(BaseForecaster):
                 fn = TripleExponentialSmoothing._calculate_mul_add_smoothing
             case SmoothingType.MUL, SmoothingType.MUL:
                 fn = TripleExponentialSmoothing._calculate_mul_mul_smoothing
-            case _:
-                err_msg = (
-                    f"Invalid combination of trend_type and seasonal_type: "
-                    f"{trend_type}, {seasonal_type}"
-                )
-                raise ValueError(err_msg)
 
         return fn(
             ts=ts,
