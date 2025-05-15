@@ -1,9 +1,9 @@
 """Unit tests for ErrorMetrics class."""
 
 import numpy as np
-import numpy.typing as npt
 import pytest
 
+from intermittent_forecast.base_forecaster import TSArray
 from intermittent_forecast.error_metrics import (
     ErrorMetricRegistry,
     ErrorMetrics,
@@ -12,18 +12,18 @@ from intermittent_forecast.error_metrics import (
 
 # Sample arrays for testing
 @pytest.fixture
-def ts() -> npt.NDArray[np.float64]:
+def ts() -> TSArray:
     return np.array([10.0, 20.0, 30.0, 40.0, 50.0, 0.0, -10.0])
 
 
 @pytest.fixture
-def forecast() -> npt.NDArray[np.float64]:
+def forecast() -> TSArray:
     return np.array([12.0, 18.0, 33.0, 39.0, 48.0, -1.0, 5.0])
 
 
 def test_mae(
-    ts: npt.NDArray[np.float64],
-    forecast: npt.NDArray[np.float64],
+    ts: TSArray,
+    forecast: TSArray,
 ) -> None:
     result = ErrorMetrics.mae(ts, forecast)
     expected = 3.714286
@@ -31,8 +31,8 @@ def test_mae(
 
 
 def test_mse(
-    ts: npt.NDArray[np.float64],
-    forecast: npt.NDArray[np.float64],
+    ts: TSArray,
+    forecast: TSArray,
 ) -> None:
     result = ErrorMetrics.mse(ts, forecast)
     expected = 35.428574
@@ -40,8 +40,8 @@ def test_mse(
 
 
 def test_msr(
-    ts: npt.NDArray[np.float64],
-    forecast: npt.NDArray[np.float64],
+    ts: TSArray,
+    forecast: TSArray,
 ) -> None:
     expected = 229.0
     result = ErrorMetrics.msr(ts, forecast)
@@ -49,8 +49,8 @@ def test_msr(
 
 
 def test_mar(
-    ts: npt.NDArray[np.float64],
-    forecast: npt.NDArray[np.float64],
+    ts: TSArray,
+    forecast: TSArray,
 ) -> None:
     expected = 13.0
     result = ErrorMetrics.mar(ts, forecast)
@@ -58,8 +58,8 @@ def test_mar(
 
 
 def test_pis(
-    ts: npt.NDArray[np.float64],
-    forecast: npt.NDArray[np.float64],
+    ts: TSArray,
+    forecast: TSArray,
 ) -> None:
     expected = 20.0
     result = ErrorMetrics.pis(ts, forecast)
@@ -67,8 +67,8 @@ def test_pis(
 
 
 def test_get_metric_from_str_for_mae(
-    ts: npt.NDArray[np.float64],
-    forecast: npt.NDArray[np.float64],
+    ts: TSArray,
+    forecast: TSArray,
 ) -> None:
     mse_func = ErrorMetricRegistry.get("mae")
     result = mse_func(ts, forecast)

@@ -3,12 +3,12 @@
 from typing import Callable, ClassVar
 
 import numpy as np
-import numpy.typing as npt
 
 from intermittent_forecast import utils
+from intermittent_forecast.base_forecaster import TSArray
 
 ErrorMetricFunc = Callable[
-    [npt.NDArray[np.float64], npt.NDArray[np.float64]],
+    [TSArray, TSArray],
     float,
 ]
 
@@ -63,8 +63,8 @@ class ErrorMetrics:
     @staticmethod
     @ErrorMetricRegistry.register("MAE")
     def mae(
-        ts: npt.NDArray[np.float64],
-        forecast: npt.NDArray[np.float64],
+        ts: TSArray,
+        forecast: TSArray,
     ) -> float:
         """Return mean absolute error of two numpy arrays."""
         e = ts - forecast
@@ -76,8 +76,8 @@ class ErrorMetrics:
     @staticmethod
     @ErrorMetricRegistry.register("MSE")
     def mse(
-        ts: npt.NDArray[np.float64],
-        forecast: npt.NDArray[np.float64],
+        ts: TSArray,
+        forecast: TSArray,
     ) -> float:
         """Return mean squared error of two numpy arrays."""
         e = ts - forecast
@@ -89,8 +89,8 @@ class ErrorMetrics:
     @staticmethod
     @ErrorMetricRegistry.register("MSR")
     def msr(
-        ts: npt.NDArray[np.float64],
-        forecast: npt.NDArray[np.float64],
+        ts: TSArray,
+        forecast: TSArray,
     ) -> float:
         """Return mean squared rate of two numpy arrays."""
         d_rate = ErrorMetrics._compute_demand_rate_array(ts)
@@ -99,8 +99,8 @@ class ErrorMetrics:
     @staticmethod
     @ErrorMetricRegistry.register("MAR")
     def mar(
-        ts: npt.NDArray[np.float64],
-        forecast: npt.NDArray[np.float64],
+        ts: TSArray,
+        forecast: TSArray,
     ) -> float:
         """Return mean absolute rate of two numpy arrays."""
         d_rate = ErrorMetrics._compute_demand_rate_array(ts)
@@ -109,8 +109,8 @@ class ErrorMetrics:
     @staticmethod
     @ErrorMetricRegistry.register("PIS")
     def pis(
-        ts: npt.NDArray[np.float64],
-        forecast: npt.NDArray[np.float64],
+        ts: TSArray,
+        forecast: TSArray,
     ) -> float:
         """Return absolute periods in stock of two numpy arrays."""
         e = ts - forecast
@@ -123,8 +123,8 @@ class ErrorMetrics:
 
     @staticmethod
     def _compute_demand_rate_array(
-        ts: npt.NDArray[np.float64],
-    ) -> npt.NDArray[np.float64]:
+        ts: TSArray,
+    ) -> TSArray:
         """Return demand rate of a time series."""
         # Calculate the demand rate
         n = len(ts)

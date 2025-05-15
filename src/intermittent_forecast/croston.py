@@ -9,7 +9,7 @@ import numpy.typing as npt
 from scipy import optimize
 
 from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import BaseForecaster
+from intermittent_forecast.base_forecaster import BaseForecaster, TSArray
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
@@ -18,8 +18,8 @@ class FittedModelResult(NamedTuple):
 
     alpha: float
     beta: float
-    ts_base: npt.NDArray[np.float64]
-    ts_fitted: npt.NDArray[np.float64]
+    ts_base: TSArray
+    ts_fitted: TSArray
 
 
 class CrostonVariant(BaseForecaster):
@@ -27,13 +27,13 @@ class CrostonVariant(BaseForecaster):
 
     requires_bias_correction = False
 
-    def __init__(self) -> None:  # noqa: D107
+    def __init__(self) -> None:
         super().__init__()
         self._fitted_model_result: FittedModelResult | None = None
 
     def fit(
         self,
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float | None = None,
         beta: float | None = None,
         optimisation_metric: str = "MSE",
@@ -92,7 +92,7 @@ class CrostonVariant(BaseForecaster):
         self,
         start: int,
         end: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Forecast the time series using the fitted parameters."""
         start = utils.validate_non_negative_integer(start, name="start")
         end = utils.validate_positive_integer(end, name="end")
@@ -126,11 +126,11 @@ class CrostonVariant(BaseForecaster):
 
     @staticmethod
     def _compute_forecast(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float,
         beta: float,
         bias_correction: float = 1,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Compute Croston's method."""
         # Perform croston's method.
         non_zero_demand = CrostonVariant._get_nonzero_demand_array(ts)
@@ -171,7 +171,7 @@ class CrostonVariant(BaseForecaster):
 
     @staticmethod
     def _find_optimal_parameters(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float | None,
         beta: float | None,
         error_metric_func: Callable[..., float],
@@ -201,7 +201,7 @@ class CrostonVariant(BaseForecaster):
     @staticmethod
     def _cost_function(
         params: tuple[float, float],
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         error_metric_func: Callable[..., float],
     ) -> float:
         """Cost function used for optimisation of alpha and beta."""
@@ -226,14 +226,14 @@ class CrostonVariant(BaseForecaster):
 
     @staticmethod
     def _get_nonzero_demand_array(
-        ts: npt.NDArray[np.float64],
-    ) -> npt.NDArray[np.float64]:
+        ts: TSArray,
+    ) -> TSArray:
         """Get non-zero demand values from the time series."""
         return np.asarray(ts[ts != 0], dtype=np.float64)
 
     @staticmethod
     def _get_nonzero_demand_indices(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
     ) -> npt.NDArray[np.int_]:
         """Get indices of non-zero demand values."""
         return np.flatnonzero(ts)
@@ -249,14 +249,14 @@ class CrostonVariant(BaseForecaster):
     def _initialise_array(
         array_length: int,
         initial_value: float,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Initialise array and set value at the 0th index."""
         array = np.zeros(array_length)
         array[0] = initial_value
         return array
 
     @staticmethod
-    def forward_fill(arr: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    def forward_fill(arr: TSArray) -> TSArray:
         """Forward fills zeros in an array with the last non-zero value."""
         mask = arr != 0
         valid = np.where(mask, arr, 0)
@@ -294,11 +294,11 @@ class TSB(CrostonVariant):
 
     @staticmethod
     def _compute_forecast(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float,
         beta: float,
         bias_correction: float = 1,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Perform forecasting using TSB method."""
         n = len(ts)
         p_idx = TSB._get_nonzero_demand_indices(ts)

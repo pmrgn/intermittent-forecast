@@ -4,9 +4,9 @@ import itertools
 from typing import Any
 
 import numpy as np
-import numpy.typing as npt
 import pytest
 
+from intermittent_forecast.base_forecaster import TSArray
 from intermittent_forecast.error_metrics import (
     ErrorMetricFunc,
     ErrorMetricRegistry,
@@ -18,14 +18,14 @@ from intermittent_forecast.exponential_smoothing import (
 
 
 @pytest.fixture
-def ts_all_positive() -> npt.NDArray[np.float64]:
+def ts_all_positive() -> TSArray:
     return np.array([26, 28, 35, 36, 31, 33, 37, 40, 35, 39, 42, 43])
 
 
 class TestTripleExponentialSmoothingFit:
     def test_alpha_can_be_set_with_beta_and_gamma_optimised(
         self,
-        ts_all_positive: npt.NDArray[np.float64],
+        ts_all_positive: TSArray,
     ) -> None:
         """Test a smoothing parameter can be set with optimisation."""
         alpha = 0.35
@@ -43,7 +43,7 @@ class TestTripleExponentialSmoothingFit:
 class TestTripleExponentialSmoothingForecast:
     def test_returns_correct_values_with_add_trend_add_seasonality(
         self,
-        ts_all_positive: npt.NDArray[np.float64],
+        ts_all_positive: TSArray,
     ) -> None:
         """Test forecasts using additive / additive smoothing."""
         n_obs = len(ts_all_positive)
@@ -94,7 +94,7 @@ class TestTripleExponentialSmoothingForecast:
 
     def test_returns_correct_values_with_add_trend_mul_seasonality(
         self,
-        ts_all_positive: npt.NDArray[np.float64],
+        ts_all_positive: TSArray,
     ) -> None:
         """Test forecasts using additive / multiplicative smoothing."""
         n_obs = len(ts_all_positive)
@@ -145,7 +145,7 @@ class TestTripleExponentialSmoothingForecast:
 
     def test_returns_correct_values_with_mul_trend_mul_seasonality(
         self,
-        ts_all_positive: npt.NDArray[np.float64],
+        ts_all_positive: TSArray,
     ) -> None:
         """Test forecasts using multiplicative / multiplicative smoothing."""
         n_obs = len(ts_all_positive)
@@ -196,7 +196,7 @@ class TestTripleExponentialSmoothingForecast:
 
     def test_returns_correct_values_with_add_trend_add_seasonality(
         self,
-        ts_all_positive: npt.NDArray[np.float64],
+        ts_all_positive: TSArray,
     ) -> None:
         """Test forecasts using multiplicative / additive smoothing."""
         n_obs = len(ts_all_positive)
@@ -281,7 +281,7 @@ class TestTripleExponentialSmoothingOptimisedForecast:
     )
     def test_optimised_forecast_error_less_than_non_optimised(
         self,
-        ts_all_positive: npt.NDArray[np.float64],
+        ts_all_positive: TSArray,
         smoothing_params: dict[str, float],
         smoothing_type: dict[str, SmoothingType],
         error_metric: ErrorMetricFunc,

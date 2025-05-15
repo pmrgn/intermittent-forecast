@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, TypeVar
 
-if TYPE_CHECKING:
-    import numpy as np
-    import numpy.typing as npt
+import numpy as np
+import numpy.typing as npt
 
 T_BaseForecaster = TypeVar("T_BaseForecaster", bound="BaseForecaster")
+TSArray = npt.NDArray[np.float64]
 
 
 class BaseForecaster(ABC):
@@ -18,7 +18,7 @@ class BaseForecaster(ABC):
     @abstractmethod
     def fit(
         self: T_BaseForecaster,
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         *args: Any,  # noqa: ANN401
         **kwargs: Any,  # noqa: ANN401
     ) -> T_BaseForecaster:
@@ -29,5 +29,5 @@ class BaseForecaster(ABC):
         self,
         start: int,
         end: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Return the forecast."""

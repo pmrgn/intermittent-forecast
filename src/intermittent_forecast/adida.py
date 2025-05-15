@@ -7,12 +7,12 @@ from enum import Enum
 from typing import Any, NamedTuple
 
 import numpy as np
-import numpy.typing as npt
 
 from intermittent_forecast import utils
 from intermittent_forecast.base_forecaster import (
     BaseForecaster,
     T_BaseForecaster,
+    TSArray,
 )
 
 
@@ -42,8 +42,8 @@ class ADIDAFittedResult(NamedTuple):
     """Fitted result for ADIDA model."""
 
     aggregated_model: BaseForecaster
-    temporal_weights: npt.NDArray[np.float64]
-    ts_base: npt.NDArray[np.float64]
+    temporal_weights: TSArray
+    ts_base: TSArray
 
 
 class ADIDA:
@@ -102,7 +102,7 @@ class ADIDA:
     def fit(
         self,
         model: T_BaseForecaster,
-        ts: npt.NDArray[np.float64] | list[float],
+        ts: TSArray | list[float],
         **kwargs: Any,  # noqa: ANN401
     ) -> ADIDA:
         """Aggregate the time series and fit using the forecasting model.
@@ -112,7 +112,7 @@ class ADIDA:
         model : T_BaseForecaster
             Forecasting model class to use on the aggregated time series. E.g.
             CRO, SBA, TSB, TripleExponentialSmoothing.
-        ts : npt.NDArray[np.float64]
+        ts : np.ndarray or list of float
             Time series to fit.
         **kwargs : Any
             Kwargs to pass to the forecasting model.
@@ -170,7 +170,7 @@ class ADIDA:
         self,
         start: int,
         end: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Forecast the time series using the ADIDA method.
 
         Returns
@@ -210,7 +210,7 @@ class ADIDA:
         config: ADIDAConfig,
         fitted_result: ADIDAFittedResult,
         end: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Disaggregate the forecasted values.
 
         Parameters
@@ -265,17 +265,17 @@ class ADIDA:
 
     @staticmethod
     def sliding_aggregation(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         window_size: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Aggregate the time-series using a sliding window."""
         return np.convolve(a=ts, v=np.ones(window_size), mode="valid")
 
     @staticmethod
     def sliding_disaggregation(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         window_size: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Disaggregate the time-series using a sliding window."""
         window_size = utils.validate_positive_integer(
             value=window_size,
@@ -291,9 +291,9 @@ class ADIDA:
 
     @staticmethod
     def block_aggregation(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         window_size: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Aggregate the time-series using a fixed window."""
         ts_length = len(ts)
         if ts_length < 1 or window_size < 1:
@@ -318,10 +318,10 @@ class ADIDA:
 
     @staticmethod
     def block_disaggregation(
-        aggregated_ts: npt.NDArray[np.float64],
+        aggregated_ts: TSArray,
         window_size: int,
         base_ts_length: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Disaggregate the time-series using a fixed size."""
         # Repeat the aggregated time series to match the length of the original
         # time series.
@@ -337,9 +337,9 @@ class ADIDA:
 
     @staticmethod
     def calculate_temporal_weights(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         cycle_length: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Calculate the distribution for a time series.
 
         If the time series is not a multiple of the cycle, it will be padded with
@@ -369,9 +369,9 @@ class ADIDA:
 
     @staticmethod
     def apply_temporal_weights(
-        ts: npt.NDArray[np.float64],
-        weights: npt.NDArray[np.float64],
-    ) -> npt.NDArray[np.float64]:
+        ts: TSArray,
+        weights: TSArray,
+    ) -> TSArray:
         """Apply the temporal distribution to a time series."""
         # Tile the weights up to the length of the time series
         weights_rpt = utils.validate_array_is_numeric(
