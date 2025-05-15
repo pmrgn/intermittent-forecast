@@ -113,10 +113,12 @@ class ADIDA:
         model : T_BaseForecaster
             Forecasting model class to use on the aggregated time series. E.g.
             CRO, SBA, TSB, TripleExponentialSmoothing.
-        ts : np.ndarray or list of float
+        ts : ArrayLike
             Time series to fit.
         **kwargs : Any
-            Kwargs to pass to the forecasting model.
+            Kwargs to pass to the forecasting model. For valid kwargs, see the
+            documentation for the fit method of the forecasting model you are
+            using.
 
         """
         if not isinstance(model, BaseForecaster):
@@ -174,10 +176,17 @@ class ADIDA:
     ) -> TSArray:
         """Forecast the time series using the ADIDA method.
 
+        Parameters
+        ----------
+        start : int
+            Start index of the forecast (inclusive).
+        end : int
+            End index of the forecast (inclusive).
+
         Returns
         -------
-        np.ndarray
-            Forecasted values.
+        forecast : np.ndarray
+            Forecasted values, disaggregated to the original time series.
 
         """
         start = utils.validate_non_negative_integer(start, name="start")
@@ -212,19 +221,7 @@ class ADIDA:
         fitted_result: ADIDAFittedResult,
         end: int,
     ) -> TSArray:
-        """Disaggregate the forecasted values.
-
-        Parameters
-        ----------
-        mode : str, optional
-            Disaggregation mode, by default DisaggregationMode.UNIFORM.value.
-
-        Returns
-        -------
-        np.ndarray
-            Disaggregated forecasted values.
-
-        """
+        """Disaggregate the forecasted values."""
         # Calculate the number of steps to forecast for the aggregated model.
         base_steps = end - len(fitted_result.ts_base)
         agg_steps = (base_steps // config.aggregation_period) + 1
@@ -343,7 +340,8 @@ class ADIDA:
     ) -> TSArray:
         """Calculate the distribution for a time series.
 
-        If the time series is not a multiple of the cycle, it will be padded with
+        This returns the average proportion of demand for each step in the
+        cycle, i.e. the array of weights will sum to 1.
 
         """
         if len(ts) < cycle_length:
@@ -363,7 +361,8 @@ class ADIDA:
         # Calculate the average for each step in the cycle
         averages = sums / counts
 
-        # The weights are the proportion for each step in the cycle
+        # The weights are then the average proportion for each step in the
+        # cycle.
         temporal_weights = averages / averages.sum()
 
         return utils.validate_array_is_numeric(temporal_weights)
@@ -373,7 +372,7 @@ class ADIDA:
         ts: TSArray,
         weights: TSArray,
     ) -> TSArray:
-        """Apply the temporal distribution to a time series."""
+        """Apply the temporal weights to a time series."""
         # Tile the weights up to the length of the time series
         weights_rpt = utils.validate_array_is_numeric(
             np.tile(weights, len(ts) // len(weights) + 1)[: len(ts)],
