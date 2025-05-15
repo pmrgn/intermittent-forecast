@@ -18,7 +18,7 @@ def get_enum_member_from_str(
     enum_class: type[EnumMember],
     member_name: str,
 ) -> EnumMember:
-    """Convert a string to an enum value."""
+    """Get an enum member using the string."""
     try:
         return enum_class(member_str.lower())
     except ValueError:
@@ -33,7 +33,7 @@ def get_enum_member_from_str(
 def validate_time_series(
     ts: TSInput,
 ) -> TSArray:
-    """Validate the time-series is a 1-dimensional numpy array."""
+    """Ensure the time-series is valid and is 1-dimensional."""
     try:
         ts = np.asarray(ts, dtype=np.float64)
     except ValueError:

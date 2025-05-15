@@ -14,7 +14,11 @@ ErrorMetricFunc = Callable[
 
 
 class ErrorMetricRegistry:
-    """Registry for error metrics."""
+    """Registry for error metrics.
+
+    The registry is a dictionary that maps error metric names to error metric
+    functions, allowing for easy lookup and retrieval.
+    """
 
     _registry: ClassVar[dict[str, ErrorMetricFunc]] = {}
 
