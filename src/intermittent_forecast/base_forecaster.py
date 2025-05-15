@@ -14,7 +14,16 @@ TSInput = npt.ArrayLike
 
 
 class BaseForecaster(ABC):
-    """Base class for forecasting models."""
+    """Abstract base class for forecasting models.
+
+    Subclasses must implement the following methods:
+        - fit(ts): Train the model on a time series.
+        - forecast(start, end): Generate forecasts for the specified range.
+
+    This base class defines a consistent interface for time series forecasters,
+    allowing for easy wrapping for different approaches such as ADIDA.
+
+    """
 
     @abstractmethod
     def fit(
@@ -23,7 +32,7 @@ class BaseForecaster(ABC):
         *args: Any,  # noqa: ANN401
         **kwargs: Any,  # noqa: ANN401
     ) -> T_BaseForecaster:
-        """Fit the model to the time-series. Must be implemented."""
+        """Fit the model to the time-series."""
 
     @abstractmethod
     def forecast(
