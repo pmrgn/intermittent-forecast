@@ -1,12 +1,14 @@
-# utils.py
+"""Utility functions for the package."""
 
 from __future__ import annotations
 
 from enum import Enum
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 import numpy as np
-import numpy.typing as npt
+
+if TYPE_CHECKING:
+    from intermittent_forecast.base_forecaster import TSArray, TSInput
 
 EnumMember = TypeVar("EnumMember", bound=Enum)
 
@@ -16,7 +18,7 @@ def get_enum_member_from_str(
     enum_class: type[EnumMember],
     member_name: str,
 ) -> EnumMember:
-    """Convert a string to an enum value."""
+    """Get an enum member using the string."""
     try:
         return enum_class(member_str.lower())
     except ValueError:
@@ -29,29 +31,18 @@ def get_enum_member_from_str(
 
 
 def validate_time_series(
-    ts: list[float] | npt.NDArray[np.float64],
-) -> npt.NDArray[np.float64]:
-    """Validate the time-series is a 1-dimensional numpy array."""
-    if isinstance(ts, list):
-        ts = np.array(ts)
-
-    elif not isinstance(ts, np.ndarray):
-        err_msg = "Time-series must be a list or numpy array."
-        raise TypeError(err_msg)
+    ts: TSInput,
+) -> TSArray:
+    """Ensure the time-series is valid and is 1-dimensional."""
+    try:
+        ts = np.asarray(ts, dtype=np.float64)
+    except ValueError:
+        err_msg = "Time-series must be an array of integers or floats."
+        raise ValueError(err_msg) from None
 
     if ts.ndim != 1:
         err_msg = "Time-series must be 1-dimensional."
         raise ValueError(err_msg)
-
-    if not (
-        np.issubdtype(ts.dtype, np.integer)
-        or np.issubdtype(
-            ts.dtype,
-            np.floating,
-        )
-    ):
-        err_msg = "Time-series must contain integers or floats."
-        raise TypeError(err_msg)
 
     min_length = 2
     if len(ts[ts != 0]) < min_length:
@@ -62,8 +53,8 @@ def validate_time_series(
 
 
 def validate_array_is_numeric(
-    arr: npt.NDArray[np.float64],
-) -> npt.NDArray[np.float64]:
+    arr: TSArray,
+) -> TSArray:
     """Validate the array is numeric."""
     if not np.issubdtype(arr.dtype, np.number):
         err_msg = "Array must contain numeric values."

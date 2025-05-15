@@ -1,10 +1,10 @@
-"""Tests for the ADIDA class."""
+"""Tests for the ADIDA model."""
 
 import numpy as np
-import numpy.typing as npt
 import pytest
 
 from intermittent_forecast.adida import ADIDA
+from intermittent_forecast.base_forecaster import TSArray
 from intermittent_forecast.croston import CRO
 from intermittent_forecast.exponential_smoothing import (
     TripleExponentialSmoothing,
@@ -12,27 +12,27 @@ from intermittent_forecast.exponential_smoothing import (
 
 
 @pytest.fixture
-def time_series_linear() -> npt.NDArray[np.float64]:
+def time_series_linear() -> TSArray:
     return np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
 
 @pytest.fixture
-def time_series_cyclical() -> npt.NDArray[np.float64]:
+def time_series_cyclical() -> TSArray:
     return np.array([1, 2, 3, 4, 5, 1, 2, 3, 4, 5])
 
 
 @pytest.fixture
-def even_intermittent_time_series() -> npt.NDArray[np.float64]:
+def even_intermittent_time_series() -> TSArray:
     return np.array([0, 0, 3, 0, 0, 5, 0, 0, 0, 2, 0, 0, 0, 0, 4, 0])
 
 
 @pytest.fixture
-def even_aggregated_time_series() -> npt.NDArray[np.float64]:
+def even_aggregated_time_series() -> TSArray:
     return np.array([4, 7, 0, 9])
 
 
 @pytest.fixture
-def odd_time_series() -> npt.NDArray[np.float64]:
+def odd_time_series() -> TSArray:
     return np.array([0, 3, 0, 0, 5, 0, 0, 0, 2, 0, 0, 0, 0, 4, 0])
 
 
@@ -52,8 +52,8 @@ class TestADIDAAggregation:
     def test_block_aggregation_with_even_ts(
         self,
         size: int,
-        expected: npt.NDArray[np.float64],
-        even_intermittent_time_series: npt.NDArray[np.float64],
+        expected: TSArray,
+        even_intermittent_time_series: TSArray,
     ) -> None:
         result = ADIDA.block_aggregation(
             even_intermittent_time_series,
@@ -76,8 +76,8 @@ class TestADIDAAggregation:
     def test_block_aggregation_with_odd_ts(
         self,
         size: int,
-        expected: npt.NDArray[np.float64],
-        odd_time_series: npt.NDArray[np.float64],
+        expected: TSArray,
+        odd_time_series: TSArray,
     ) -> None:
         result = ADIDA.block_aggregation(
             odd_time_series,
@@ -100,8 +100,8 @@ class TestADIDAAggregation:
     def test_sliding_aggregation_with_even_ts(
         self,
         size: int,
-        expected: npt.NDArray[np.float64],
-        even_intermittent_time_series: npt.NDArray[np.float64],
+        expected: TSArray,
+        even_intermittent_time_series: TSArray,
     ) -> None:
         result = ADIDA.sliding_aggregation(
             even_intermittent_time_series,
@@ -152,7 +152,7 @@ class TestADIDADisaggregation:
         self,
         window_size: int,
         base_ts_length: int,
-        expected: npt.NDArray[np.float64],
+        expected: TSArray,
     ) -> None:
         aggregated_ts = np.array([4, 8, 0, 9])
         result = ADIDA.block_disaggregation(
@@ -173,7 +173,7 @@ class TestADIDADisaggregation:
     def test_sliding_disaggregation(
         self,
         size: int,
-        expected: npt.NDArray[np.float64],
+        expected: TSArray,
     ) -> None:
         ts = np.array([4, 7, 2, 9, 0, 6])
         result = ADIDA.sliding_disaggregation(
@@ -211,9 +211,9 @@ class TestADIDATemporalWeights:
     )
     def test_returns_correct_temporal_weights(
         self,
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         cycle: int,
-        expected: npt.NDArray[np.float64],
+        expected: TSArray,
     ) -> None:
         result = ADIDA.calculate_temporal_weights(
             ts=ts,
@@ -243,9 +243,9 @@ class TestADIDATemporalWeights:
     )
     def test_returns_correct_series_after_applying_temporal_weights(
         self,
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         temporal_weights: int,
-        expected: npt.NDArray[np.float64],
+        expected: TSArray,
     ) -> None:
         result = ADIDA.apply_temporal_weights(
             ts=ts,
@@ -266,10 +266,10 @@ class TestADIDATemporalWeights:
     )
     def test_returns_correct_series_after_calculate_and_apply_temporal_weights(
         self,
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         cycle: int,
-        ts_agg: npt.NDArray[np.float64],
-        expected: npt.NDArray[np.float64],
+        ts_agg: TSArray,
+        expected: TSArray,
     ) -> None:
         temporal_weights = ADIDA.calculate_temporal_weights(
             ts=ts,
@@ -309,7 +309,7 @@ class TestADIDAForecast:
     )
     def test_croston_block_aggregation(
         self,
-        time_series_linear: npt.NDArray[np.float64],
+        time_series_linear: TSArray,
         size: int,
         expected: list[np.float64],
     ) -> None:
@@ -358,7 +358,7 @@ class TestADIDAForecast:
     )
     def test_croston_block_aggregation_seasonal_disaggregation(
         self,
-        time_series_linear: npt.NDArray[np.float64],
+        time_series_linear: TSArray,
         size: int,
         expected: list[np.float64],
     ) -> None:
@@ -381,7 +381,7 @@ class TestADIDAForecast:
 
     def test_croston_with_cyclical_time_series(
         self,
-        time_series_cyclical: npt.NDArray[np.float64],
+        time_series_cyclical: TSArray,
     ) -> None:
         aggregation_period = 5
         adida_model = ADIDA(

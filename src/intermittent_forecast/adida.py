@@ -7,12 +7,13 @@ from enum import Enum
 from typing import Any, NamedTuple
 
 import numpy as np
-import numpy.typing as npt
 
 from intermittent_forecast import utils
 from intermittent_forecast.base_forecaster import (
     BaseForecaster,
     T_BaseForecaster,
+    TSArray,
+    TSInput,
 )
 
 
@@ -31,34 +32,49 @@ class DisaggregationMode(Enum):
 
 
 class ADIDAConfig(NamedTuple):
+    """Configuration for ADIDA model initilisation."""
+
     aggregation_period: int
     aggregation_mode: AggregationMode
     disaggregation_mode: DisaggregationMode
 
 
 class ADIDAFittedResult(NamedTuple):
+    """Fitted result for ADIDA model."""
+
     aggregated_model: BaseForecaster
-    temporal_weights: npt.NDArray[np.float64]
-    ts_base: npt.NDArray[np.float64]
+    temporal_weights: TSArray
+    ts_base: TSArray
 
 
 class ADIDA:
-    """Aggregate-disaggregate Intermittent Demand Approach."""
+    """Aggregate-Disaggregate Intermittent Demand Approach (ADIDA).
 
-    def __init__(
+    Parameters
+    ----------
+    aggregation_period : int
+        Number of time periods to aggregate.
+    aggregation_mode : str
+        The aggregation mode, either "sliding" or "block".
+    disaggregation_mode : str
+        The disaggregation mode, either "seasonal" or "uniform".
+
+    Methods
+    -------
+    fit
+        Fit the model.
+    forecast
+        Forecast the time series using the fitted parameters.
+
+
+    """
+
+    def __init__(  # noqa: D107
         self,
         aggregation_period: int,
         aggregation_mode: str,
         disaggregation_mode: str,
     ) -> None:
-        """Initialise the ADIDA model.
-
-        Parameters
-        ----------
-        model : BaseForecaster
-            Forecasting model to use for aggregation.
-
-        """
         aggregation_period = utils.validate_non_negative_integer(
             value=aggregation_period,
             name="aggregation_period",
@@ -87,10 +103,24 @@ class ADIDA:
     def fit(
         self,
         model: T_BaseForecaster,
-        ts: npt.NDArray[np.float64],
+        ts: TSInput,
         **kwargs: Any,  # noqa: ANN401
     ) -> ADIDA:
-        """Fit the model."""
+        """Aggregate the time series and fit using the forecasting model.
+
+        Parameters
+        ----------
+        model : T_BaseForecaster
+            Forecasting model class to use on the aggregated time series. E.g.
+            CRO, SBA, TSB, TripleExponentialSmoothing.
+        ts : ArrayLike
+            Time series to fit.
+        **kwargs : Any
+            Kwargs to pass to the forecasting model. For valid kwargs, see the
+            documentation for the fit method of the forecasting model you are
+            using.
+
+        """
         if not isinstance(model, BaseForecaster):
             err_msg = (
                 "ADIDA model requires a forecasting model.",
@@ -143,13 +173,20 @@ class ADIDA:
         self,
         start: int,
         end: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Forecast the time series using the ADIDA method.
+
+        Parameters
+        ----------
+        start : int
+            Start index of the forecast (inclusive).
+        end : int
+            End index of the forecast (inclusive).
 
         Returns
         -------
-        np.ndarray
-            Forecasted values.
+        forecast : np.ndarray
+            Forecasted values, disaggregated to the original time series.
 
         """
         start = utils.validate_non_negative_integer(start, name="start")
@@ -167,7 +204,10 @@ class ADIDA:
         self,
     ) -> ADIDAFittedResult:
         """Get the fitted model."""
-        if not self._adida_fitted_result:
+        if not self._adida_fitted_result or not isinstance(
+            self._adida_fitted_result,
+            ADIDAFittedResult,
+        ):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )
@@ -180,20 +220,8 @@ class ADIDA:
         config: ADIDAConfig,
         fitted_result: ADIDAFittedResult,
         end: int,
-    ) -> npt.NDArray[np.float64]:
-        """Disaggregate the forecasted values.
-
-        Parameters
-        ----------
-        mode : str, optional
-            Disaggregation mode, by default DisaggregationMode.UNIFORM.value.
-
-        Returns
-        -------
-        np.ndarray
-            Disaggregated forecasted values.
-
-        """
+    ) -> TSArray:
+        """Disaggregate the forecasted values."""
         # Calculate the number of steps to forecast for the aggregated model.
         base_steps = end - len(fitted_result.ts_base)
         agg_steps = (base_steps // config.aggregation_period) + 1
@@ -235,17 +263,17 @@ class ADIDA:
 
     @staticmethod
     def sliding_aggregation(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         window_size: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Aggregate the time-series using a sliding window."""
         return np.convolve(a=ts, v=np.ones(window_size), mode="valid")
 
     @staticmethod
     def sliding_disaggregation(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         window_size: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Disaggregate the time-series using a sliding window."""
         window_size = utils.validate_positive_integer(
             value=window_size,
@@ -261,9 +289,9 @@ class ADIDA:
 
     @staticmethod
     def block_aggregation(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         window_size: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Aggregate the time-series using a fixed window."""
         ts_length = len(ts)
         if ts_length < 1 or window_size < 1:
@@ -288,10 +316,10 @@ class ADIDA:
 
     @staticmethod
     def block_disaggregation(
-        aggregated_ts: npt.NDArray[np.float64],
+        aggregated_ts: TSArray,
         window_size: int,
         base_ts_length: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Disaggregate the time-series using a fixed size."""
         # Repeat the aggregated time series to match the length of the original
         # time series.
@@ -307,12 +335,13 @@ class ADIDA:
 
     @staticmethod
     def calculate_temporal_weights(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         cycle_length: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Calculate the distribution for a time series.
 
-        If the time series is not a multiple of the cycle, it will be padded with
+        This returns the average proportion of demand for each step in the
+        cycle, i.e. the array of weights will sum to 1.
 
         """
         if len(ts) < cycle_length:
@@ -332,17 +361,18 @@ class ADIDA:
         # Calculate the average for each step in the cycle
         averages = sums / counts
 
-        # The weights are the proportion for each step in the cycle
+        # The weights are then the average proportion for each step in the
+        # cycle.
         temporal_weights = averages / averages.sum()
 
         return utils.validate_array_is_numeric(temporal_weights)
 
     @staticmethod
     def apply_temporal_weights(
-        ts: npt.NDArray[np.float64],
-        weights: npt.NDArray[np.float64],
-    ) -> npt.NDArray[np.float64]:
-        """Apply the temporal distribution to a time series."""
+        ts: TSArray,
+        weights: TSArray,
+    ) -> TSArray:
+        """Apply the temporal weights to a time series."""
         # Tile the weights up to the length of the time series
         weights_rpt = utils.validate_array_is_numeric(
             np.tile(weights, len(ts) // len(weights) + 1)[: len(ts)],

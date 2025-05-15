@@ -3,31 +3,41 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, TypeVar
 
-if TYPE_CHECKING:
-    import numpy as np
-    import numpy.typing as npt
+import numpy as np
+import numpy.typing as npt
 
 T_BaseForecaster = TypeVar("T_BaseForecaster", bound="BaseForecaster")
+TSArray = npt.NDArray[np.float64]
+TSInput = npt.ArrayLike
 
 
 class BaseForecaster(ABC):
-    """Base class for forecasting models."""
+    """Abstract base class for forecasting models.
+
+    Subclasses must implement the following methods:
+        - fit(ts): Train the model on a time series.
+        - forecast(start, end): Generate forecasts for the specified range.
+
+    This base class defines a consistent interface for time series forecasters,
+    allowing for easy wrapping for different approaches such as ADIDA.
+
+    """
 
     @abstractmethod
     def fit(
         self: T_BaseForecaster,
-        ts: npt.NDArray[np.float64],
+        ts: TSInput,
         *args: Any,  # noqa: ANN401
         **kwargs: Any,  # noqa: ANN401
     ) -> T_BaseForecaster:
-        """Fit the model to the time-series. Must be implemented."""
+        """Fit the model to the time-series."""
 
     @abstractmethod
     def forecast(
         self,
         start: int,
         end: int,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Return the forecast."""

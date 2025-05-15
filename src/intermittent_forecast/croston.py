@@ -9,37 +9,68 @@ import numpy.typing as npt
 from scipy import optimize
 
 from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import BaseForecaster
+from intermittent_forecast.base_forecaster import (
+    BaseForecaster,
+    TSArray,
+    TSInput,
+)
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
 class FittedModelResult(NamedTuple):
-    """TypedDict for fitted parameters."""
+    """TypedDict for results after fitting the model."""
 
     alpha: float
     beta: float
-    ts_base: npt.NDArray[np.float64]
-    ts_fitted: npt.NDArray[np.float64]
+    ts_base: TSArray
+    ts_fitted: TSArray
 
 
 class CrostonVariant(BaseForecaster):
-    """Base class for Croston variants."""
+    """Base class for Croston variants.
 
-    requires_bias_correction = False
+    This class implements the core logic for Croston's method.
 
-    def __init__(self) -> None:
-        """Initialise the forecaster."""
+    """
+
+    _requires_bias_correction = False
+
+    def __init__(self) -> None:  # noqa: D107
         super().__init__()
         self._fitted_model_result: FittedModelResult | None = None
 
     def fit(
         self,
-        ts: npt.NDArray[np.float64],
+        ts: TSInput,
         alpha: float | None = None,
         beta: float | None = None,
         optimisation_metric: str = "MSE",
     ) -> CrostonVariant:
-        """Fit the model to the time-series."""
+        """Fit the model to the time-series.
+
+        Parameters
+        ----------
+        ts : ArrayLike
+            Time series to fit the model to. Must be 1-dimensional and contain
+            at least two non-zero values.
+        alpha : float, optional
+            Demand smoothing factor in the range [0, 1]. Values closer to 1 will
+            favour recent demand. If not set, the value will be optimised.
+        beta : float, optional
+            Interval smoothing factor in the range [0, 1]. Values closer to 1
+            will favour recent intervals.  If not set, the value will be
+            optimised.
+        optimisation_metric : {'MAR', 'MAE', 'MSE', 'MSR', 'PIS'}, default='MSE'
+            Metric to use when optimising for alpha and beta. The selected
+            metric is used when comparing the error between the time series and
+            the fitted in-sample forecast.
+
+        Returns
+        -------
+        self : CrostonVariant
+            Fitted model instance.
+
+        """
         # Validate time series.
         ts = utils.validate_time_series(ts)
 
@@ -66,7 +97,7 @@ class CrostonVariant(BaseForecaster):
                 error_metric_func=error_metric_func,
             )
 
-        if self.requires_bias_correction:
+        if self._requires_bias_correction:
             bias_correction = self._get_bias_correction_value(beta=beta)
         else:
             bias_correction = 1
@@ -93,8 +124,23 @@ class CrostonVariant(BaseForecaster):
         self,
         start: int,
         end: int,
-    ) -> npt.NDArray[np.float64]:
-        """Forecast the time series using the fitted parameters."""
+    ) -> TSArray:
+        """Forecast the time series using the fitted parameters.
+
+        Parameters
+        ----------
+        start : int
+            Start index of the forecast (inclusive).
+        end : int
+            End index of the forecast (inclusive).
+
+        Returns
+        -------
+        forecast : ndarray
+            Forecasted values.
+
+
+        """
         start = utils.validate_non_negative_integer(start, name="start")
         end = utils.validate_positive_integer(end, name="end")
 
@@ -113,8 +159,11 @@ class CrostonVariant(BaseForecaster):
     def get_fitted_model_result(
         self,
     ) -> FittedModelResult:
-        """Get the fitted parameters."""
-        if not self._fitted_model_result:
+        """Get the fitted results."""
+        if not self._fitted_model_result or not isinstance(
+            self._fitted_model_result,
+            FittedModelResult,
+        ):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )
@@ -124,13 +173,12 @@ class CrostonVariant(BaseForecaster):
 
     @staticmethod
     def _compute_forecast(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float,
         beta: float,
         bias_correction: float = 1,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Compute Croston's method."""
-        # Perform croston's method.
         non_zero_demand = CrostonVariant._get_nonzero_demand_array(ts)
         p_idx = CrostonVariant._get_nonzero_demand_indices(ts)
         p_diff = CrostonVariant._get_nonzero_demand_intervals(p_idx)
@@ -169,7 +217,7 @@ class CrostonVariant(BaseForecaster):
 
     @staticmethod
     def _find_optimal_parameters(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float | None,
         beta: float | None,
         error_metric_func: Callable[..., float],
@@ -199,7 +247,7 @@ class CrostonVariant(BaseForecaster):
     @staticmethod
     def _cost_function(
         params: tuple[float, float],
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         error_metric_func: Callable[..., float],
     ) -> float:
         """Cost function used for optimisation of alpha and beta."""
@@ -213,7 +261,7 @@ class CrostonVariant(BaseForecaster):
 
     def _get_bias_correction_value(self, beta: float) -> float:  # noqa: ARG002
         """Return the bias correction value, if applicable."""
-        if not self.requires_bias_correction:
+        if not self._requires_bias_correction:
             err_msg = "Bias correction is not applicable for this method."
             raise RuntimeError(err_msg)
         err_msg = (
@@ -224,14 +272,14 @@ class CrostonVariant(BaseForecaster):
 
     @staticmethod
     def _get_nonzero_demand_array(
-        ts: npt.NDArray[np.float64],
-    ) -> npt.NDArray[np.float64]:
+        ts: TSArray,
+    ) -> TSArray:
         """Get non-zero demand values from the time series."""
         return np.asarray(ts[ts != 0], dtype=np.float64)
 
     @staticmethod
     def _get_nonzero_demand_indices(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
     ) -> npt.NDArray[np.int_]:
         """Get indices of non-zero demand values."""
         return np.flatnonzero(ts)
@@ -247,14 +295,14 @@ class CrostonVariant(BaseForecaster):
     def _initialise_array(
         array_length: int,
         initial_value: float,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Initialise array and set value at the 0th index."""
         array = np.zeros(array_length)
         array[0] = initial_value
         return array
 
     @staticmethod
-    def forward_fill(arr: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    def forward_fill(arr: TSArray) -> TSArray:
         """Forward fills zeros in an array with the last non-zero value."""
         mask = arr != 0
         valid = np.where(mask, arr, 0)
@@ -268,9 +316,9 @@ class CRO(CrostonVariant):
 
 
 class SBA(CrostonVariant):
-    """SBA variant of Croston's method."""
+    """Syntetos-Boylan Approximation (SBA) variant of Croston's method."""
 
-    requires_bias_correction = True
+    _requires_bias_correction = True
 
     def _get_bias_correction_value(self, beta: float) -> float:
         """Bias correction applicable to the SBA method."""
@@ -278,9 +326,9 @@ class SBA(CrostonVariant):
 
 
 class SBJ(CrostonVariant):
-    """SBJ variant of Croston's method."""
+    """Shale-Boylan-Johnston (SBJ) variant of Croston's method."""
 
-    requires_bias_correction = True
+    _requires_bias_correction = True
 
     def _get_bias_correction_value(self, beta: float) -> float:
         """Bias correction applicable to the SBJ method."""
@@ -288,15 +336,15 @@ class SBJ(CrostonVariant):
 
 
 class TSB(CrostonVariant):
-    """TSB variant of Croston's method."""
+    """eunter-Syntetos-Babai (TSB) variant of Croston's method."""
 
     @staticmethod
     def _compute_forecast(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float,
         beta: float,
         bias_correction: float = 1,
-    ) -> npt.NDArray[np.float64]:
+    ) -> TSArray:
         """Perform forecasting using TSB method."""
         n = len(ts)
         p_idx = TSB._get_nonzero_demand_indices(ts)

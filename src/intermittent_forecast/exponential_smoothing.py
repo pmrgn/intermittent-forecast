@@ -1,4 +1,4 @@
-"""Exponential Smoothing for Time Series Forecasting."""
+"""Methods for forecasting time series using Triple Exponential Smoothing."""
 
 from __future__ import annotations
 
@@ -6,48 +6,50 @@ from enum import Enum
 from typing import Callable, NamedTuple
 
 import numpy as np
-import numpy.typing as npt
 from scipy import optimize
 
 from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import BaseForecaster
+from intermittent_forecast.base_forecaster import (
+    BaseForecaster,
+    TSArray,
+    TSInput,
+)
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
 class SmoothingType(Enum):
-    """Enum for aggregation modes."""
+    """Enum for smoothing modes."""
 
     ADD = "additive"
     MUL = "multiplicative"
 
 
 class FittedModelResult(NamedTuple):
-    """TypedDict for fitted parameters."""
+    """TypedDict for the results after fitting the model."""
 
     alpha: float
     beta: float
     gamma: float
-    ts_base: npt.NDArray[np.float64]
-    ts_fitted: npt.NDArray[np.float64]
+    ts_base: TSArray
+    ts_fitted: TSArray
     trend_type: SmoothingType
     seasonal_type: SmoothingType
     period: int
     lvl_final: float
     trend_final: float
-    seasonal_final: npt.NDArray[np.float64]
+    seasonal_final: TSArray
 
 
 class TripleExponentialSmoothing(BaseForecaster):
     """Triple Exponential Smoothing."""
 
-    def __init__(self) -> None:
-        """Initialise the forecaster."""
+    def __init__(self) -> None:  # noqa: D107
         super().__init__()
         self._fitted_model_result: FittedModelResult | None = None
 
     def fit(
         self,
-        ts: npt.NDArray[np.float64],
+        ts: TSInput,
         period: int,
         trend_type: str = "additive",
         seasonal_type: str = "additive",
@@ -56,6 +58,40 @@ class TripleExponentialSmoothing(BaseForecaster):
         gamma: float | None = None,
         optimisation_metric: str | None = None,
     ) -> TripleExponentialSmoothing:
+        """Fit the model to the time-series.
+
+        Parameters
+        ----------
+        ts : ArrayLike
+            Time series to fit the model to. Must be 1-dimensional and contain
+            at least two non-zero values. If using multiplicative smoothing,
+            the time series must be entirely positive.
+        period : int
+            The period of the seasonal component.
+        trend_type : {"additive", "multiplicative"}, default "additive"
+            The type of trend smoothing to use.
+        seasonal_type : {"additive", "multiplicative"}, default "additive"
+            The type of seasonal smoothing to use.
+        alpha : float, optional
+            Level smoothing factor in the range [0, 1]. Values closer to 1 will
+            favour recent demand. If not set, the value will be optimised.
+        beta : float, optional
+            Trend smoothing factor in the range [0, 1]. Values closer to 1 will
+            favour recent demand. If not set, the value will be optimised.
+        gamma : float, optional
+            Seasonal smoothing factor in the range [0, 1]. Values closer to 1
+            will favour recent demand. If not set, the value will be optimised.
+        optimisation_metric : {'MAR', 'MAE', 'MSE', 'MSR', 'PIS'}, default='MSE'
+            Metric to use when optimising for alpha and beta. The selected
+            metric is used when comparing the error between the time series and
+            the fitted in-sample forecast.
+
+        Returns
+        -------
+        self : TripleExponentialSmoothing
+            Fitted model instance.
+
+        """
         # Validate trend and seasonal types, and convert to enum members.
         trend_type_member = utils.get_enum_member_from_str(
             member_str=trend_type,
@@ -73,7 +109,20 @@ class TripleExponentialSmoothing(BaseForecaster):
             name="period",
         )
 
+        # Validate the time series.
         ts = utils.validate_time_series(ts)
+
+        # If using multiplicative smoothing, ensure the time series contains
+        # only positive values.
+        if (
+            trend_type_member is SmoothingType.MUL
+            or seasonal_type_member is SmoothingType.MUL
+        ) and not np.all(ts > 0):
+            err_msg = (
+                "The series must be all greater than 0 for multiplicative "
+                "smoothing."
+            )
+            raise ValueError(err_msg)
 
         # Validate any provided smoothing parameters.
         for param, param_str in zip(
@@ -138,8 +187,23 @@ class TripleExponentialSmoothing(BaseForecaster):
         self,
         start: int,
         end: int,
-    ) -> npt.NDArray[np.float64]:
-        """Forecast the time series using the fitted parameters."""
+    ) -> TSArray:
+        """Forecast the time series using the fitted parameters.
+
+        Parameters
+        ----------
+        start : int
+            Start index of the forecast (inclusive).
+        end : int
+            End index of the forecast (inclusive).
+
+        Returns
+        -------
+        forecast : ndarray
+            Forecasted values.
+
+
+        """
         # Get the fitted model result
         fitted_params = self.get_fitted_model_result()
         ts_fitted = fitted_params.ts_fitted
@@ -199,8 +263,11 @@ class TripleExponentialSmoothing(BaseForecaster):
     def get_fitted_model_result(
         self,
     ) -> FittedModelResult:
-        """Get the fitted parameters."""
-        if not self._fitted_model_result:
+        """Get the results after fitting the model."""
+        if not self._fitted_model_result or not isinstance(
+            self._fitted_model_result,
+            FittedModelResult,
+        ):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
             )
@@ -210,15 +277,15 @@ class TripleExponentialSmoothing(BaseForecaster):
 
     @staticmethod
     def _compute_exponential_smoothing(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float,
         beta: float,
         gamma: float,
         period: int,
         trend_type: SmoothingType,
         seasonal_type: SmoothingType,
-    ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-        """Compute exponential smoothing."""
+    ) -> tuple[float, float, TSArray, TSArray]:
+        """Map the smoothing types to the appropriate functions and call."""
         match trend_type, seasonal_type:
             case SmoothingType.ADD, SmoothingType.ADD:
                 fn = TripleExponentialSmoothing._calculate_add_add_smoothing
@@ -239,12 +306,13 @@ class TripleExponentialSmoothing(BaseForecaster):
 
     @staticmethod
     def _calculate_add_add_smoothing(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float,
         beta: float,
         gamma: float,
         period: int,
-    ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    ) -> tuple[float, float, TSArray, TSArray]:
+        """Calculate with additive / additive smoothing."""
         lvl, b, s = TripleExponentialSmoothing._initialise_arrays(
             ts=ts,
             period=period,
@@ -265,12 +333,13 @@ class TripleExponentialSmoothing(BaseForecaster):
 
     @staticmethod
     def _calculate_add_mul_smoothing(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float,
         beta: float,
         gamma: float,
         period: int,
-    ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    ) -> tuple[float, float, TSArray, TSArray]:
+        """Calculate with additive / multiplicative smoothing."""
         lvl, b, s = TripleExponentialSmoothing._initialise_arrays(
             ts=ts,
             period=period,
@@ -291,12 +360,13 @@ class TripleExponentialSmoothing(BaseForecaster):
 
     @staticmethod
     def _calculate_mul_add_smoothing(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float,
         beta: float,
         gamma: float,
         period: int,
-    ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    ) -> tuple[float, float, TSArray, TSArray]:
+        """Calculate with multiplicative / additive smoothing."""
         lvl, b, s = TripleExponentialSmoothing._initialise_arrays(
             ts=ts,
             period=period,
@@ -318,12 +388,13 @@ class TripleExponentialSmoothing(BaseForecaster):
 
     @staticmethod
     def _calculate_mul_mul_smoothing(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         alpha: float,
         beta: float,
         gamma: float,
         period: int,
-    ) -> tuple[float, float, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    ) -> tuple[float, float, TSArray, TSArray]:
+        """Calculate with multiplicative / multiplicative smoothing."""
         lvl, b, s = TripleExponentialSmoothing._initialise_arrays(
             ts=ts,
             period=period,
@@ -344,15 +415,16 @@ class TripleExponentialSmoothing(BaseForecaster):
 
     @staticmethod
     def _initialise_arrays(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         period: int,
         trend_type: SmoothingType,
         seasonal_type: SmoothingType,
     ) -> tuple[
-        npt.NDArray[np.float64],
-        npt.NDArray[np.float64],
-        npt.NDArray[np.float64],
+        TSArray,
+        TSArray,
+        TSArray,
     ]:
+        """Initialise arrays for exponential smoothing."""
         m = period
         n = len(ts)
         lvl = np.zeros(n + 1)
@@ -361,18 +433,18 @@ class TripleExponentialSmoothing(BaseForecaster):
         lvl[0] = ts[:m].mean()
         if trend_type == SmoothingType.ADD:
             b[0] = (ts[m : 2 * m].sum() - ts[:m].sum()) / m**2
-        if trend_type == SmoothingType.MUL:
+        elif trend_type == SmoothingType.MUL:
             b[0] = (ts[m : 2 * m].sum() / ts[:m].sum()) ** (1 / m)
         if seasonal_type == SmoothingType.ADD:
             s[:m] = ts[:m] - lvl[0]
-        if seasonal_type == SmoothingType.MUL:
+        elif seasonal_type == SmoothingType.MUL:
             s[:m] = ts[:m] / lvl[0]
 
         return lvl, b, s
 
     @staticmethod
     def _find_optimal_parameters(
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         error_metric_func: Callable[..., float],
         period: int,
         trend_type: SmoothingType,
@@ -381,7 +453,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         beta: float | None,
         gamma: float | None,
     ) -> tuple[float, float, float]:
-        """Return squared error between timeseries and smoothed array"""
+        """Find the optimal smoothing parameters that minimise the error."""
         # Set the bounds for the smoothing parameters. If values have been
         # passed, then the bounds will be locked at that value. Else they are
         # set at (0,1).
@@ -418,13 +490,13 @@ class TripleExponentialSmoothing(BaseForecaster):
     @staticmethod
     def _cost_function(
         params: tuple[float, float, float],
-        ts: npt.NDArray[np.float64],
+        ts: TSArray,
         error_metric_func: Callable[..., float],
         period: int,
         trend_type: SmoothingType,
         seasonal_type: SmoothingType,
     ) -> float:
-        """Cost function used for optimisation of alpha and beta."""
+        """Calculate the error between actual and fitted time series."""
         alpha, beta, gamma = params
         *_, ts_fitted = (
             TripleExponentialSmoothing._compute_exponential_smoothing(

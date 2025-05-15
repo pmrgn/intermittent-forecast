@@ -1,12 +1,12 @@
-"""Tests for the CRO class in the croston module."""
+"""Tests for the Croston model and variants."""
 
 import itertools
 from typing import Any
 
 import numpy as np
-import numpy.typing as npt
 import pytest
 
+from intermittent_forecast.base_forecaster import TSArray
 from intermittent_forecast.croston import CRO, SBA, SBJ, TSB
 from intermittent_forecast.error_metrics import (
     ErrorMetricFunc,
@@ -47,14 +47,22 @@ class TestCROFit:
     def test_raises_on_invalid_ts_type(self) -> None:
         ts = "foo bar"
         with pytest.raises(
-            TypeError,
-            match="must be a list or numpy array",
+            ValueError,
+            match="must be an array of integers or floats",
+        ):
+            CRO().fit(ts=ts)
+
+    def test_raises_on_invalid_ts_values(self) -> None:
+        ts = ["foo", "bar"]
+        with pytest.raises(
+            ValueError,
+            match="must be an array of integers or floats",
         ):
             CRO().fit(ts=ts)
 
     def test_raises_oninvalid_alpha(
         self,
-        basic_time_series: npt.NDArray[np.float64],
+        basic_time_series: TSArray,
     ) -> None:
         with pytest.raises(
             ValueError,
@@ -64,7 +72,7 @@ class TestCROFit:
 
     def test_raises_on_invalid_optimisation_metric_string(
         self,
-        basic_time_series: npt.NDArray[np.float64],
+        basic_time_series: TSArray,
     ) -> None:
         invalid_metric = "Foo bar"
         with pytest.raises(
@@ -75,7 +83,7 @@ class TestCROFit:
 
     def test_raises_on_invalid_optimisation_metric_type(
         self,
-        basic_time_series: npt.NDArray[np.float64],
+        basic_time_series: TSArray,
     ) -> None:
         invalid_metric = 5
         with pytest.raises(
@@ -137,7 +145,7 @@ class TestCROForecast:
 
     def test_raises_on_invalid_forecast_start(
         self,
-        basic_time_series: npt.NDArray[np.float64],
+        basic_time_series: TSArray,
     ) -> None:
         with pytest.raises(
             ValueError,
