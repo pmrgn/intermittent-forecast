@@ -22,7 +22,40 @@ def ts_all_positive() -> TSArray:
     return np.array([26, 28, 35, 36, 31, 33, 37, 40, 35, 39, 42, 43])
 
 
+@pytest.fixture
+def ts_intermittent() -> TSArray:
+    return np.array([0, 28, 35, 0, 0, 0, 37])
+
+
 class TestTripleExponentialSmoothingFit:
+    def test_raises_with_multiplicative_trend_and_non_zero_series(
+        self,
+        ts_intermittent: TSArray,
+    ) -> None:
+        with pytest.raises(
+            ValueError,
+            match="must be all greater than 0 for multiplicative smoothing",
+        ):
+            TripleExponentialSmoothing().fit(
+                ts=ts_intermittent,
+                period=2,
+                trend_type=SmoothingType.MUL.value,
+            )
+
+    def test_raises_with_multiplicative_seasonality_and_non_zero_series(
+        self,
+        ts_intermittent: TSArray,
+    ) -> None:
+        with pytest.raises(
+            ValueError,
+            match="must be all greater than 0 for multiplicative smoothing",
+        ):
+            TripleExponentialSmoothing().fit(
+                ts=ts_intermittent,
+                period=2,
+                seasonal_type=SmoothingType.MUL.value,
+            )
+
     def test_alpha_can_be_set_with_beta_and_gamma_optimised(
         self,
         ts_all_positive: TSArray,
@@ -194,7 +227,7 @@ class TestTripleExponentialSmoothingForecast:
             rtol=1e-5,
         )
 
-    def test_returns_correct_values_with_add_trend_add_seasonality(
+    def test_returns_correct_values_with_mul_trend_add_seasonality(
         self,
         ts_all_positive: TSArray,
     ) -> None:

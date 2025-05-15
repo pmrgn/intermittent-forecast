@@ -75,7 +75,19 @@ class TripleExponentialSmoothing(BaseForecaster):
             name="period",
         )
 
+        # Validate the time series.
         ts = utils.validate_time_series(ts)
+
+        # The series must be all greater than 0 for multiplicative smoothing.
+        if (
+            trend_type_member is SmoothingType.MUL
+            or seasonal_type_member is SmoothingType.MUL
+        ) and not np.all(ts > 0):
+            err_msg = (
+                "The series must be all greater than 0 for multiplicative "
+                "smoothing."
+            )
+            raise ValueError(err_msg)
 
         # Validate any provided smoothing parameters.
         for param, param_str in zip(
