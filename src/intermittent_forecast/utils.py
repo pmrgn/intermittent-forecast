@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, TypeVar
 import numpy as np
 
 if TYPE_CHECKING:
-    from intermittent_forecast.base_forecaster import TSArray
+    from intermittent_forecast.base_forecaster import TSArray, TSInput
 
 EnumMember = TypeVar("EnumMember", bound=Enum)
 
@@ -31,7 +31,7 @@ def get_enum_member_from_str(
 
 
 def validate_time_series(
-    ts: list[float] | TSArray,
+    ts: TSInput,
 ) -> TSArray:
     """Validate the time-series is a 1-dimensional numpy array."""
     try:

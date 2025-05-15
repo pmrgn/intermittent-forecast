@@ -9,7 +9,11 @@ import numpy.typing as npt
 from scipy import optimize
 
 from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import BaseForecaster, TSArray
+from intermittent_forecast.base_forecaster import (
+    BaseForecaster,
+    TSArray,
+    TSInput,
+)
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
@@ -33,7 +37,7 @@ class CrostonVariant(BaseForecaster):
 
     def fit(
         self,
-        ts: TSArray,
+        ts: TSInput,
         alpha: float | None = None,
         beta: float | None = None,
         optimisation_metric: str = "MSE",

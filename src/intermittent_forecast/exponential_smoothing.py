@@ -9,7 +9,11 @@ import numpy as np
 from scipy import optimize
 
 from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import BaseForecaster, TSArray
+from intermittent_forecast.base_forecaster import (
+    BaseForecaster,
+    TSArray,
+    TSInput,
+)
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
@@ -45,7 +49,7 @@ class TripleExponentialSmoothing(BaseForecaster):
 
     def fit(
         self,
-        ts: TSArray,
+        ts: TSInput,
         period: int,
         trend_type: str = "additive",
         seasonal_type: str = "additive",

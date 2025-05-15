@@ -10,6 +10,7 @@ import numpy.typing as npt
 
 T_BaseForecaster = TypeVar("T_BaseForecaster", bound="BaseForecaster")
 TSArray = npt.NDArray[np.float64]
+TSInput = npt.ArrayLike
 
 
 class BaseForecaster(ABC):
@@ -18,7 +19,7 @@ class BaseForecaster(ABC):
     @abstractmethod
     def fit(
         self: T_BaseForecaster,
-        ts: TSArray,
+        ts: TSInput,
         *args: Any,  # noqa: ANN401
         **kwargs: Any,  # noqa: ANN401
     ) -> T_BaseForecaster:

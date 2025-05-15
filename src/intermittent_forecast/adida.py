@@ -13,6 +13,7 @@ from intermittent_forecast.base_forecaster import (
     BaseForecaster,
     T_BaseForecaster,
     TSArray,
+    TSInput,
 )
 
 
@@ -102,7 +103,7 @@ class ADIDA:
     def fit(
         self,
         model: T_BaseForecaster,
-        ts: TSArray | list[float],
+        ts: TSInput,
         **kwargs: Any,  # noqa: ANN401
     ) -> ADIDA:
         """Aggregate the time series and fit using the forecasting model.
