@@ -27,8 +27,7 @@ class CrostonVariant(BaseForecaster):
 
     requires_bias_correction = False
 
-    def __init__(self) -> None:
-        """Initialise the forecaster."""
+    def __init__(self) -> None:  # noqa: D107
         super().__init__()
         self._fitted_model_result: FittedModelResult | None = None
 

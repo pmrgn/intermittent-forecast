@@ -31,34 +31,49 @@ class DisaggregationMode(Enum):
 
 
 class ADIDAConfig(NamedTuple):
+    """Configuration for ADIDA model initilisation."""
+
     aggregation_period: int
     aggregation_mode: AggregationMode
     disaggregation_mode: DisaggregationMode
 
 
 class ADIDAFittedResult(NamedTuple):
+    """Fitted result for ADIDA model."""
+
     aggregated_model: BaseForecaster
     temporal_weights: npt.NDArray[np.float64]
     ts_base: npt.NDArray[np.float64]
 
 
 class ADIDA:
-    """Aggregate-disaggregate Intermittent Demand Approach."""
+    """Aggregate-Disaggregate Intermittent Demand Approach (ADIDA).
 
-    def __init__(
+    Parameters
+    ----------
+    aggregation_period : int
+        Number of time periods to aggregate.
+    aggregation_mode : str
+        The aggregation mode, either "sliding" or "block".
+    disaggregation_mode : str
+        The disaggregation mode, either "seasonal" or "uniform".
+
+    Methods
+    -------
+    fit
+        Fit the model.
+    forecast
+        Forecast the time series using the fitted parameters.
+
+
+    """
+
+    def __init__(  # noqa: D107
         self,
         aggregation_period: int,
         aggregation_mode: str,
         disaggregation_mode: str,
     ) -> None:
-        """Initialise the ADIDA model.
-
-        Parameters
-        ----------
-        model : BaseForecaster
-            Forecasting model to use for aggregation.
-
-        """
         aggregation_period = utils.validate_non_negative_integer(
             value=aggregation_period,
             name="aggregation_period",
@@ -87,10 +102,22 @@ class ADIDA:
     def fit(
         self,
         model: T_BaseForecaster,
-        ts: npt.NDArray[np.float64],
+        ts: npt.NDArray[np.float64] | list[float],
         **kwargs: Any,  # noqa: ANN401
     ) -> ADIDA:
-        """Fit the model."""
+        """Aggregate the time series and fit using the forecasting model.
+
+        Parameters
+        ----------
+        model : T_BaseForecaster
+            Forecasting model class to use on the aggregated time series. E.g.
+            CRO, SBA, TSB, TripleExponentialSmoothing.
+        ts : npt.NDArray[np.float64]
+            Time series to fit.
+        **kwargs : Any
+            Kwargs to pass to the forecasting model.
+
+        """
         if not isinstance(model, BaseForecaster):
             err_msg = (
                 "ADIDA model requires a forecasting model.",
