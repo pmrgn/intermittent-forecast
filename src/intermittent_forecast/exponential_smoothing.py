@@ -1,4 +1,4 @@
-"""Exponential Smoothing for Time Series Forecasting."""
+"""Methods for forecasting time series using Triple Exponential Smoothing."""
 
 from __future__ import annotations
 

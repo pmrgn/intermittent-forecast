@@ -1,1 +1,1 @@
-# Init for tests
+"""init."""

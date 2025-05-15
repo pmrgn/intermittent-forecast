@@ -1,4 +1,4 @@
-"""Tests for the ADIDA class."""
+"""Tests for the ADIDA model."""
 
 import numpy as np
 import pytest

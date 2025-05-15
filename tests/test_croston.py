@@ -1,4 +1,4 @@
-"""Tests for the CRO class in the croston module."""
+"""Tests for the Croston model and variants."""
 
 import itertools
 from typing import Any

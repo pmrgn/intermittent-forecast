@@ -1,4 +1,4 @@
-"""Error metrics for intermittent demand forecasting."""
+"""Error metrics for time series and intermittent demand forecasting."""
 
 from typing import Callable, ClassVar
 

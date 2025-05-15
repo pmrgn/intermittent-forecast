@@ -1,4 +1,4 @@
-# utils.py
+"""Utility functions for the package."""
 
 from __future__ import annotations
 
