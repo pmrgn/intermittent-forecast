@@ -8,7 +8,6 @@ import pytest
 
 from intermittent_forecast.base_forecaster import TSArray
 from intermittent_forecast.error_metrics import (
-    ErrorMetricFunc,
     ErrorMetricRegistry,
 )
 from intermittent_forecast.exponential_smoothing import (
@@ -317,7 +316,7 @@ class TestTripleExponentialSmoothingOptimisedForecast:
         ts_all_positive: TSArray,
         smoothing_params: dict[str, float],
         smoothing_type: dict[str, SmoothingType],
-        error_metric: ErrorMetricFunc,
+        error_metric: str,
     ) -> None:
         """Test that an optimised forecast produces minimised error.
 

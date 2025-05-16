@@ -231,9 +231,8 @@ class CrostonVariant(BaseForecaster):
 
         # Set the initial guess as the midpoint of the bounds for alpha and
         # beta.
-        initial_guess = (
-            sum(alpha_bounds) / 2,
-            sum(beta_bounds) / 2,
+        initial_guess = np.array(
+            [sum(alpha_bounds) / 2, sum(beta_bounds) / 2],
         )
         min_err = optimize.minimize(
             CrostonVariant._cost_function,
@@ -246,7 +245,8 @@ class CrostonVariant(BaseForecaster):
 
     @staticmethod
     def _cost_function(
-        params: tuple[float, float],
+        params: npt.NDArray[np.float64],
+        /,
         ts: TSArray,
         error_metric_func: Callable[..., float],
     ) -> float:

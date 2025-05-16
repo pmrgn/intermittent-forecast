@@ -1,6 +1,7 @@
 """Tests for the ADIDA model."""
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 
 from intermittent_forecast.adida import ADIDA
@@ -244,7 +245,7 @@ class TestADIDATemporalWeights:
     def test_returns_correct_series_after_applying_temporal_weights(
         self,
         ts: TSArray,
-        temporal_weights: int,
+        temporal_weights: npt.NDArray[np.float64],
         expected: TSArray,
     ) -> None:
         result = ADIDA.apply_temporal_weights(
