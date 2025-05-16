@@ -10,7 +10,7 @@ from intermittent_forecast.base_forecaster import TSArray
 from intermittent_forecast.error_metrics import (
     ErrorMetricRegistry,
 )
-from intermittent_forecast.exponential_smoothing import (
+from intermittent_forecast.triple_exponential_smoothing import (
     SmoothingType,
     TripleExponentialSmoothing,
 )
@@ -357,7 +357,7 @@ class TestTripleExponentialSmoothingOptimisedForecast:
         err_naive_forecast = error_metric_func(ts, forecast_estimated)
         err_optimised_forecast = error_metric_func(ts, forecast_optimised)
 
-        if not (err_optimised_forecast < err_naive_forecast):
+        if err_optimised_forecast > err_naive_forecast:
             err_msg = (
                 f"Expected optimised forecast error to be <= default guess. "
                 f"Got: {err_optimised_forecast} > {err_naive_forecast}"

@@ -313,7 +313,7 @@ class TestCROOptimisedForecast:
         err_naive_forecast = error_metric_func(ts, forecast_estimated)
         err_optimised_forecast = error_metric_func(ts, forecast_optimised)
 
-        if not (err_optimised_forecast <= err_naive_forecast):
+        if err_optimised_forecast > err_naive_forecast:
             err_msg = (
                 f"Expected optimised forecast error to be <= default guess. "
                 f"Got: {err_optimised_forecast} > {err_naive_forecast}"

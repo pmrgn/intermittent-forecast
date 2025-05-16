@@ -458,7 +458,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         # Set the bounds for the smoothing parameters. If values have been
         # passed, then the bounds will be locked at that value. Else they are
         # set at (0,1).
-        alpha_bounds = (alpha or 0, beta or 1)
+        alpha_bounds = (alpha or 0, alpha or 1)
         beta_bounds = (beta or 0, beta or 1)
         gamma_bounds = (gamma or 0, gamma or 1)
 
