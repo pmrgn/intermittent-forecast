@@ -35,11 +35,10 @@ class TestSimpleExponentialSmoothingFit:
 
 
 class TestSimpleExponentialSmoothingForecast:
-    def test_returns_correct_values_with_alpha_set(
+    def test_returns_correct_values_with_alpha_set_to_one(
         self,
         ts_linear: TSArray,
     ) -> None:
-        """Test forecasts using additive / additive smoothing."""
         n_obs = len(ts_linear)
         model = SimpleExponentialSmoothing().fit(
             ts=ts_linear,
@@ -55,6 +54,45 @@ class TestSimpleExponentialSmoothingForecast:
 
         forecast_outsample = model.forecast(start=n_obs, end=n_obs + 4)
         expected_outsample = [6, 6, 6, 6, 6]
+
+        np.testing.assert_allclose(
+            forecast_outsample,
+            expected_outsample,
+            rtol=1e-5,
+        )
+
+    def test_returns_correct_values_with_alpha_set_to_float(
+        self,
+        ts_random: TSArray,
+    ) -> None:
+        n_obs = len(ts_random)
+        model = SimpleExponentialSmoothing().fit(
+            ts=ts_random,
+            alpha=0.3,
+        )
+        forecast_insample = model.forecast(start=0, end=n_obs - 1)
+        expected_insample = [
+            40.0,
+            40.0,
+            36.4,
+            35.98,
+            37.486,
+            36.1402,
+            31.59814,
+            33.218698,
+            29.2530886,
+            28.8771620,
+            29.5140134,
+            29.9598093,
+        ]
+        np.testing.assert_allclose(
+            forecast_insample,
+            expected_insample,
+            rtol=1e-5,
+        )
+
+        forecast_outsample = model.forecast(start=n_obs, end=n_obs + 2)
+        expected_outsample = [27.571866, 27.571866, 27.571866]
 
         np.testing.assert_allclose(
             forecast_outsample,
