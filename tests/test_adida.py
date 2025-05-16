@@ -7,7 +7,7 @@ import pytest
 from intermittent_forecast.adida import ADIDA
 from intermittent_forecast.base_forecaster import TSArray
 from intermittent_forecast.croston import CRO
-from intermittent_forecast.exponential_smoothing import (
+from intermittent_forecast.triple_exponential_smoothing import (
     TripleExponentialSmoothing,
 )
 

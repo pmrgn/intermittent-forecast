@@ -10,7 +10,7 @@ from intermittent_forecast.base_forecaster import TSArray
 from intermittent_forecast.error_metrics import (
     ErrorMetricRegistry,
 )
-from intermittent_forecast.exponential_smoothing import (
+from intermittent_forecast.triple_exponential_smoothing import (
     SmoothingType,
     TripleExponentialSmoothing,
 )
