@@ -9,7 +9,6 @@ import pytest
 from intermittent_forecast.base_forecaster import TSArray
 from intermittent_forecast.croston import CRO, SBA, SBJ, TSB
 from intermittent_forecast.error_metrics import (
-    ErrorMetricFunc,
     ErrorMetricRegistry,
 )
 
@@ -90,7 +89,10 @@ class TestCROFit:
             TypeError,
             match="Error metric must be a string",
         ):
-            CRO().fit(ts=basic_time_series, optimisation_metric=invalid_metric)
+            CRO().fit(
+                ts=basic_time_series,
+                optimisation_metric=invalid_metric,  # type: ignore[arg-type]
+            )
 
     def test_alpha_can_be_set_with_beta_optimised(
         self,
@@ -279,7 +281,7 @@ class TestCROOptimisedForecast:
     def test_optimised_forecast_error_less_than_non_optimised(
         self,
         smoothing_params: tuple[float, float],
-        error_metric: ErrorMetricFunc,
+        error_metric: str,
     ) -> None:
         """Test that an optimised forecast produces minimised error.
 
@@ -313,7 +315,7 @@ class TestCROOptimisedForecast:
 
         if not (err_optimised_forecast <= err_naive_forecast):
             err_msg = (
-                f"Expected optimised forecast error to be less than default guess. "
-                f"Got: {err_optimised_forecast} greater than {err_naive_forecast}"
+                f"Expected optimised forecast error to be <= default guess. "
+                f"Got: {err_optimised_forecast} > {err_naive_forecast}"
             )
             raise ValueError(err_msg)

@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Callable, NamedTuple
 
 import numpy as np
+import numpy.typing as npt
 from scipy import optimize
 
 from intermittent_forecast import utils
@@ -462,10 +463,12 @@ class TripleExponentialSmoothing(BaseForecaster):
         gamma_bounds = (gamma or 0, gamma or 1)
 
         # Set the initial guess as the midpoint of the bounds.
-        initial_guess = (
-            sum(alpha_bounds) / 2,
-            sum(beta_bounds) / 2,
-            sum(gamma_bounds) / 2,
+        initial_guess = np.array(
+            [
+                sum(alpha_bounds) / 2,
+                sum(beta_bounds) / 2,
+                sum(gamma_bounds) / 2,
+            ],
         )
         min_err = optimize.minimize(
             TripleExponentialSmoothing._cost_function,
@@ -489,7 +492,8 @@ class TripleExponentialSmoothing(BaseForecaster):
 
     @staticmethod
     def _cost_function(
-        params: tuple[float, float, float],
+        params: npt.NDArray[np.float64],
+        /,
         ts: TSArray,
         error_metric_func: Callable[..., float],
         period: int,
