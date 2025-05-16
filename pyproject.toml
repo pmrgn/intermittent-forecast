@@ -28,7 +28,7 @@ line-length = 80
 per-file-ignores = { "tests/*" = ["D101", "D102", "D103"] }
 
 [tool.ruff.lint.pylint]
-max-args = 6
+max-args = 8
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

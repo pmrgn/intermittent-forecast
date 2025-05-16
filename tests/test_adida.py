@@ -476,3 +476,24 @@ class TestADIDAForecast:
                 disaggregation_mode="seasonal",
                 aggregation_period=1,
             ).forecast(start=0, end=1)
+
+
+class TestADIDAFit:
+    def test_raises_when_mul_exp_smoothing_with_intermittent_ts(
+        self,
+        even_intermittent_time_series: TSArray,
+    ) -> None:
+        with pytest.raises(
+            ValueError,
+            match="must be all greater than 0 for multiplicative smoothing",
+        ):
+            ADIDA(
+                aggregation_mode="block",
+                disaggregation_mode="seasonal",
+                aggregation_period=1,
+            ).fit(
+                model=TripleExponentialSmoothing(),
+                ts=even_intermittent_time_series,
+                trend_type="multiplicative",
+                period=1,
+            )
