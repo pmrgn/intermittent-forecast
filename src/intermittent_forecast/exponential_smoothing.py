@@ -468,7 +468,7 @@ class TripleExponentialSmoothing(BaseForecaster):
                 sum(alpha_bounds) / 2,
                 sum(beta_bounds) / 2,
                 sum(gamma_bounds) / 2,
-            ]
+            ],
         )
         min_err = optimize.minimize(
             TripleExponentialSmoothing._cost_function,
