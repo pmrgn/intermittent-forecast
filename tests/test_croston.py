@@ -313,7 +313,7 @@ class TestCROOptimisedForecast:
 
         if not (err_optimised_forecast <= err_naive_forecast):
             err_msg = (
-                f"Expected optimised forecast error to be less than default guess. "
-                f"Got: {err_optimised_forecast} greater than {err_naive_forecast}"
+                f"Expected optimised forecast error to be <= default guess. "
+                f"Got: {err_optimised_forecast} > {err_naive_forecast}"
             )
             raise ValueError(err_msg)

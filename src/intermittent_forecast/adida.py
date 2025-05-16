@@ -305,9 +305,9 @@ class ADIDA:
             )
             raise ValueError(err_msg)
 
-        # The beginning of the time series is trimmed, else it may introduce a bias.
-        trim_size = ts_length % window_size
-        ts_trimmed = ts[trim_size:]
+        # The beginning of the time series is trimmed to allow for an exact
+        # number of windows, else it can introduce a bias.
+        ts_trimmed = ts[(ts_length % window_size) :]
 
         # Ensure aggregated time series is valid
         return utils.validate_array_is_numeric(
