@@ -179,18 +179,25 @@ class DoubleExponentialSmoothing(BaseForecaster):
         beta: float,
     ) -> tuple[float, float, TSArray]:
         """Map the smoothing types to the appropriate functions and call."""
-        n = len(ts)
+        n = len(ts) + 1
         lvl = np.zeros(n)
         b = np.zeros(n)
-        k = min(n, 5)
-        lvl[0] = ts[:k].mean()
-        b[0] = (ts[k] - ts[0]) / k
+        # Set the trend naively, i.e. the initial trend is the difference
+        # between the first two values in the time series.
+        b[0] = ts[1] - ts[0]
+
+        # The initial level has the trend removed as it will be added back in
+        # when constructing the fitted time series.
+        lvl[0] = ts[0] - b[0]
 
         for i in range(1, n):
             lvl[i] = alpha * ts[i - 1] + (1 - alpha) * (lvl[i - 1] + b[i - 1])
             b[i] = beta * (lvl[i] - lvl[i - 1]) + (1 - beta) * b[i - 1]
 
-        return lvl[-1], b[-1], lvl[:-1]
+        # Construct the fitted time series.
+        ts_fitted = lvl + b
+
+        return lvl[-1], b[-1], ts_fitted[:-1]
 
     @staticmethod
     def _find_optimal_parameters(
@@ -226,7 +233,7 @@ class DoubleExponentialSmoothing(BaseForecaster):
         error_metric_func: Callable[..., float],
     ) -> float:
         """Calculate the error between actual and fitted time series."""
-        alpha, beta, gamma = params
+        alpha, beta = params
         *_, ts_fitted = (
             DoubleExponentialSmoothing._compute_exponential_smoothing(
                 ts=ts,
