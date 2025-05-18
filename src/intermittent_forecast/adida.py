@@ -50,22 +50,25 @@ class ADIDAFittedResult(NamedTuple):
 class ADIDA:
     """Aggregate-Disaggregate Intermittent Demand Approach (ADIDA).
 
-    Parameters
-    ----------
-    aggregation_period : int
-        Number of time periods to aggregate.
-    aggregation_mode : str
-        The aggregation mode, either "sliding" or "block".
-    disaggregation_mode : str
-        The disaggregation mode, either "seasonal" or "uniform".
+    Args:
+        aggregation_period (int): Number of time periods to aggregate.
+        aggregation_mode (str): The aggregation mode, either "sliding" or
+            "block".
+        disaggregation_mode (str): The disaggregation mode, either
+            "seasonal" or"uniform".
 
-    Methods
-    -------
-    fit
-        Fit the model.
-    forecast
-        Forecast the time series using the fitted parameters.
+    Methods:
+        fit: Fit the model. forecast: Forecast the time series using the fitted
+            parameters.
 
+    Examples:
+    ```
+    >>> model = ADIDA(
+    >>>     aggregation_period=12,
+    >>>     aggregation_mode="sliding"
+    >>>     disaggregation_mode="seasonal",
+    >>> )
+    ```
 
     """
 
@@ -108,17 +111,15 @@ class ADIDA:
     ) -> ADIDA:
         """Aggregate the time series and fit using the forecasting model.
 
-        Parameters
-        ----------
-        model : T_BaseForecaster
-            Forecasting model class to use on the aggregated time series. E.g.
-            CRO, SBA, TSB, TripleExponentialSmoothing.
-        ts : ArrayLike
-            Time series to fit.
-        **kwargs : Any
-            Kwargs to pass to the forecasting model. For valid kwargs, see the
-            documentation for the fit method of the forecasting model you are
-            using.
+        Args:
+            model (T_BaseForecaster): Forecasting model class to use on the
+                aggregated time series. Examples include CRO, SBA, TSB,
+                and TripleExponentialSmoothing.
+            ts (ArrayLike): Time series to fit.
+            **kwargs (Any): Additional keyword arguments to pass to the
+                forecasting model. Refer to the documentation for the `fit`
+                method of the forecasting model you are using for valid
+                keyword arguments.
 
         """
         if not isinstance(model, BaseForecaster):
@@ -176,17 +177,12 @@ class ADIDA:
     ) -> TSArray:
         """Forecast the time series using the ADIDA method.
 
-        Parameters
-        ----------
-        start : int
-            Start index of the forecast (inclusive).
-        end : int
-            End index of the forecast (inclusive).
+        Args:
+            start (int): Start index of the forecast (inclusive).
+            end (int): End index of the forecast (inclusive).
 
-        Returns
-        -------
-        forecast : np.ndarray
-            Forecasted values, disaggregated to the original time series.
+        Returns:
+            np.ndarray: Forecasted values.
 
         """
         start = utils.validate_non_negative_integer(start, name="start")

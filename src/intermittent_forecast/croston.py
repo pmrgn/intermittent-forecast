@@ -17,7 +17,7 @@ from intermittent_forecast.base_forecaster import (
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
-class FittedModelResult(NamedTuple):
+class _FittedModelResult(NamedTuple):
     """TypedDict for results after fitting the model."""
 
     alpha: float
@@ -37,7 +37,7 @@ class CrostonVariant(BaseForecaster):
 
     def __init__(self) -> None:  # noqa: D107
         super().__init__()
-        self._fitted_model_result: FittedModelResult | None = None
+        self._fitted_model_result: _FittedModelResult | None = None
 
     def fit(
         self,
@@ -48,27 +48,22 @@ class CrostonVariant(BaseForecaster):
     ) -> CrostonVariant:
         """Fit the model to the time-series.
 
-        Parameters
-        ----------
-        ts : ArrayLike
-            Time series to fit the model to. Must be 1-dimensional and contain
-            at least two non-zero values.
-        alpha : float, optional
-            Demand smoothing factor in the range [0, 1]. Values closer to 1 will
-            favour recent demand. If not set, the value will be optimised.
-        beta : float, optional
-            Interval smoothing factor in the range [0, 1]. Values closer to 1
-            will favour recent intervals.  If not set, the value will be
-            optimised.
-        optimisation_metric : {'MAR', 'MAE', 'MSE', 'MSR', 'PIS'}, default='MSE'
-            Metric to use when optimising for alpha and beta. The selected
-            metric is used when comparing the error between the time series and
-            the fitted in-sample forecast.
+        Args:
+            ts (ArrayLike): Time series to fit the model to. Must be
+                1-dimensional and contain at least two non-zero values.
+            alpha (float, optional): Demand smoothing factor in the range [0,1].
+                Values closer to 1 will favour recent demand. If not set, the
+                value will be optimised. Defaults to None.
+            beta (float, optional): Interval smoothing factor in the range
+                [0,1]. Values closer to 1 will favour recent intervals.  If not
+                set, the value will be optimised. Defaults to None.
+            optimisation_metric (str, optional): Metric to use when optimising
+                for alpha and beta. The selected metric is used when comparing
+                the error between the time series and the fitted in-sample
+                forecast. Defaults to 'MSE'.
 
-        Returns
-        -------
-        self : CrostonVariant
-            Fitted model instance.
+        Returns:
+            self (CrostonVariant): Fitted model instance.
 
         """
         # Validate time series.
@@ -111,7 +106,7 @@ class CrostonVariant(BaseForecaster):
         )
 
         # Cache results
-        self._fitted_model_result = FittedModelResult(
+        self._fitted_model_result = _FittedModelResult(
             alpha=alpha,
             beta=beta,
             ts_base=ts,
@@ -127,18 +122,12 @@ class CrostonVariant(BaseForecaster):
     ) -> TSArray:
         """Forecast the time series using the fitted parameters.
 
-        Parameters
-        ----------
-        start : int
-            Start index of the forecast (inclusive).
-        end : int
-            End index of the forecast (inclusive).
+        Args:
+            start (int): Start index of the forecast (inclusive).
+            end (int): End index of the forecast (inclusive).
 
-        Returns
-        -------
-        forecast : ndarray
-            Forecasted values.
-
+        Returns:
+            np.ndarray: Forecasted values.
 
         """
         start = utils.validate_non_negative_integer(start, name="start")
@@ -158,11 +147,11 @@ class CrostonVariant(BaseForecaster):
 
     def get_fitted_model_result(
         self,
-    ) -> FittedModelResult:
+    ) -> _FittedModelResult:
         """Get the fitted results."""
         if not self._fitted_model_result or not isinstance(
             self._fitted_model_result,
-            FittedModelResult,
+            _FittedModelResult,
         ):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."

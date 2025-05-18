@@ -41,24 +41,23 @@ class SimpleExponentialSmoothing(BaseForecaster):
     ) -> SimpleExponentialSmoothing:
         """Fit the model to the time-series.
 
-        Parameters
-        ----------
-        ts : ArrayLike
-            Time series to fit the model to. Must be 1-dimensional and contain
-            at least two non-zero values. If using multiplicative smoothing,
-            the time series must be entirely positive.
-        alpha : float, optional
-            Level smoothing factor in the range [0, 1]. Values closer to 1 will
-            favour recent demand. If not set, the value will be optimised.
-        optimisation_metric : {'MAR', 'MAE', 'MSE', 'MSR', 'PIS'}, default='MSE'
-            Metric to use when optimising for alpha and beta. The selected
-            metric is used when comparing the error between the time series and
-            the fitted in-sample forecast.
+        Args:
+            ts: ArrayLike
+                Time series to fit the model to. Must be 1-dimensional and
+                contain at least two non-zero values. If using multiplicative
+                smoothing, the time series must be entirely positive.
+            alpha: float, optional
+                Level smoothing factor in the range [0, 1]. Values closer to 1
+                will favour recent demand. If not set, the value will be
+                optimised.
+            optimisation_metric: {'MAR', 'MAE', 'MSE', 'MSR', 'PIS'},
+                default='MSE' Metric to use when optimising for alpha and beta.
+                The selected metric is used when comparing the error between
+                the time series and the fitted in-sample forecast.
 
-        Returns
-        -------
-        self : SimpleExponentialSmoothing
-            Fitted model instance.
+        Returns:
+            self: SimpleExponentialSmoothing
+                Fitted model instance.
 
         """
         # Validate the time series.
@@ -105,17 +104,12 @@ class SimpleExponentialSmoothing(BaseForecaster):
     ) -> TSArray:
         """Forecast the time series using the fitted parameters.
 
-        Parameters
-        ----------
-        start : int
-            Start index of the forecast (inclusive).
-        end : int
-            End index of the forecast (inclusive).
+        Args:
+            start (int): Start index of the forecast (inclusive).
+            end (int): End index of the forecast (inclusive).
 
-        Returns
-        -------
-        forecast : ndarray
-            Forecasted values.
+        Returns:
+            np.ndarray: Forecasted values.
 
 
         """
