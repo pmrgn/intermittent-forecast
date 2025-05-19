@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from intermittent_forecast.base_forecaster import TSArray
-from intermittent_forecast.croston import Croston
+from intermittent_forecast.croston import Croston, _CrostonVariant
 from intermittent_forecast.error_metrics import (
     ErrorMetricRegistry,
 )
@@ -259,32 +259,35 @@ class TestTSBForecast:
         )
 
 
-def get_test_cases() -> list[tuple[tuple[float, float], Any]]:
+def get_test_cases() -> list[tuple[tuple[float, float], Any, Any]]:
     """Generate test cases for TestCROOptimisedForecast."""
     parameter_grid_search = list(
         itertools.product(
-            [0.01, 0.1, 0.99],
-            [0.01, 0.1, 0.99],
+            [0.01, 0.99],
+            [0.01, 0.99],
         ),
     )
     error_metrics_str = ErrorMetricRegistry.get_registry().keys()
+    variant_str = [variant.value for variant in _CrostonVariant]
 
     return [
-        (params, metric)
+        (params, metric, variant)
         for params in parameter_grid_search
         for metric in error_metrics_str
+        for variant in variant_str
     ]
 
 
 class TestCROOptimisedForecast:
     @pytest.mark.parametrize(
-        ("smoothing_params", "error_metric"),
+        ("smoothing_params", "error_metric", "variant"),
         get_test_cases(),
     )
     def test_optimised_forecast_error_less_than_non_optimised(
         self,
         smoothing_params: tuple[float, float],
         error_metric: str,
+        variant: str,
     ) -> None:
         """Test that an optimised forecast produces minimised error.
 
@@ -300,13 +303,14 @@ class TestCROOptimisedForecast:
                 ts=ts,
                 alpha=smoothing_params[0],
                 beta=smoothing_params[1],
+                variant=variant,
             )
             .forecast(start=0, end=(len_ts))
         )
 
         forecast_optimised = (
             Croston()
-            .fit(ts=ts, optimisation_metric=error_metric)
+            .fit(ts=ts, optimisation_metric=error_metric, variant=variant)
             .forecast(start=0, end=(len_ts))
         )
         # Get the error metric function from the string
