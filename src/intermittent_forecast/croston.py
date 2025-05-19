@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 from enum import Enum
 from typing import Callable, NamedTuple
 
@@ -15,8 +16,6 @@ from intermittent_forecast.base_forecaster import (
     TSArray,
     TSInput,
 )
-from scipy.optimize import differential_evolution
-import itertools
 
 
 class _CrostonVariant(Enum):
