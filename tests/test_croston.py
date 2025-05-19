@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from intermittent_forecast.base_forecaster import TSArray
-from intermittent_forecast.croston import CRO, SBA, SBJ, TSB
+from intermittent_forecast.croston import Croston
 from intermittent_forecast.error_metrics import (
     ErrorMetricRegistry,
 )
@@ -25,7 +25,7 @@ class TestCROFit:
             ValueError,
             match="at least two non-zero values",
         ):
-            CRO().fit(ts=ts)
+            Croston().fit(ts=ts)
 
     def test_raises_on_single_value_series(self) -> None:
         ts = [0.0, 0.0, 0.0, 2.0]
@@ -33,7 +33,7 @@ class TestCROFit:
             ValueError,
             match="at least two non-zero values",
         ):
-            CRO().fit(ts=ts)
+            Croston().fit(ts=ts)
 
     def test_raises_on_two_dimensional_array(self) -> None:
         ts = [[1, 2, 3], [4, 5, 6]]
@@ -41,7 +41,7 @@ class TestCROFit:
             ValueError,
             match="must be 1-dimensional",
         ):
-            CRO().fit(ts=ts)
+            Croston().fit(ts=ts)
 
     def test_raises_on_invalid_ts_type(self) -> None:
         ts = "foo bar"
@@ -49,7 +49,7 @@ class TestCROFit:
             ValueError,
             match="must be an array of integers or floats",
         ):
-            CRO().fit(ts=ts)
+            Croston().fit(ts=ts)
 
     def test_raises_on_invalid_ts_values(self) -> None:
         ts = ["foo", "bar"]
@@ -57,7 +57,7 @@ class TestCROFit:
             ValueError,
             match="must be an array of integers or floats",
         ):
-            CRO().fit(ts=ts)
+            Croston().fit(ts=ts)
 
     def test_raises_oninvalid_alpha(
         self,
@@ -67,7 +67,7 @@ class TestCROFit:
             ValueError,
             match="out of bounds",
         ):
-            CRO().fit(ts=basic_time_series, beta=3)
+            Croston().fit(ts=basic_time_series, beta=3)
 
     def test_raises_on_invalid_optimisation_metric_string(
         self,
@@ -78,7 +78,10 @@ class TestCROFit:
             ValueError,
             match=f"Error metric '{invalid_metric}' not found",
         ):
-            CRO().fit(ts=basic_time_series, optimisation_metric=invalid_metric)
+            Croston().fit(
+                ts=basic_time_series,
+                optimisation_metric=invalid_metric,
+            )
 
     def test_raises_on_invalid_optimisation_metric_type(
         self,
@@ -89,7 +92,7 @@ class TestCROFit:
             TypeError,
             match="Error metric must be a string",
         ):
-            CRO().fit(
+            Croston().fit(
                 ts=basic_time_series,
                 optimisation_metric=invalid_metric,  # type: ignore[arg-type]
             )
@@ -100,7 +103,7 @@ class TestCROFit:
     ) -> None:
         """Test alpha can be set while beta is optimised."""
         alpha = 0.35
-        model = CRO().fit(ts=basic_time_series, alpha=alpha)
+        model = Croston().fit(ts=basic_time_series, alpha=alpha)
         fitted_alpha = model.get_fitted_model_result().alpha
         if alpha != fitted_alpha:
             err_msg = f"Expected alpha to be {alpha}. Got: {fitted_alpha}"
@@ -113,7 +116,7 @@ class TestCROForecast:
         basic_time_series: list[float],
     ) -> None:
         forecast = (
-            CRO()
+            Croston()
             .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
             .forecast(start=0, end=len(basic_time_series) + 1)
         )
@@ -143,7 +146,7 @@ class TestCROForecast:
             RuntimeError,
             match="Model has not been fitted yet",
         ):
-            CRO().forecast(start=0, end=1)
+            Croston().forecast(start=0, end=1)
 
     def test_raises_on_invalid_forecast_start(
         self,
@@ -153,7 +156,7 @@ class TestCROForecast:
             ValueError,
             match="start must be 0 or greater",
         ):
-            CRO().fit(ts=basic_time_series, alpha=1, beta=1).forecast(
+            Croston().fit(ts=basic_time_series, alpha=1, beta=1).forecast(
                 start=-1,
                 end=1,
             )
@@ -165,8 +168,8 @@ class TestSBAForecast:
         basic_time_series: list[float],
     ) -> None:
         forecast = (
-            SBA()
-            .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
+            Croston()
+            .fit(ts=basic_time_series, variant="SBA", alpha=0.5, beta=0.2)
             .forecast(start=0, end=len(basic_time_series) + 1)
         )
         expected = np.array(
@@ -197,8 +200,8 @@ class TestSBJForecast:
         basic_time_series: list[float],
     ) -> None:
         forecast = (
-            SBJ()
-            .fit(ts=basic_time_series, alpha=0.5, beta=0.2)
+            Croston()
+            .fit(ts=basic_time_series, variant="SBJ", alpha=0.5, beta=0.2)
             .forecast(start=0, end=len(basic_time_series) + 1)
         )
         expected = np.array(
@@ -229,8 +232,8 @@ class TestTSBForecast:
         basic_time_series: list[float],
     ) -> None:
         forecast = (
-            TSB()
-            .fit(ts=basic_time_series, alpha=0.3, beta=0.1)
+            Croston()
+            .fit(ts=basic_time_series, variant="TSB", alpha=0.3, beta=0.1)
             .forecast(start=0, end=len(basic_time_series) + 2)
         )
         expected = np.array(
@@ -292,7 +295,7 @@ class TestCROOptimisedForecast:
         ts = np.array([1, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 4, 0, 5, 6])
         len_ts = len(ts)
         forecast_estimated = (
-            CRO()
+            Croston()
             .fit(
                 ts=ts,
                 alpha=smoothing_params[0],
@@ -302,7 +305,7 @@ class TestCROOptimisedForecast:
         )
 
         forecast_optimised = (
-            CRO()
+            Croston()
             .fit(ts=ts, optimisation_metric=error_metric)
             .forecast(start=0, end=(len_ts))
         )

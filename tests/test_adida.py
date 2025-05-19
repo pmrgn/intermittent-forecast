@@ -6,7 +6,7 @@ import pytest
 
 from intermittent_forecast.adida import ADIDA
 from intermittent_forecast.base_forecaster import TSArray
-from intermittent_forecast.croston import CRO
+from intermittent_forecast.croston import Croston
 from intermittent_forecast.triple_exponential_smoothing import (
     TripleExponentialSmoothing,
 )
@@ -320,7 +320,7 @@ class TestADIDAForecast:
             disaggregation_mode="uniform",
         )
         result = adida_model.fit(
-            model=CRO(),
+            model=Croston(),
             ts=time_series_linear,
             alpha=1,
             beta=1,
@@ -369,7 +369,7 @@ class TestADIDAForecast:
             disaggregation_mode="seasonal",
         )
         result = adida_model.fit(
-            model=CRO(),
+            model=Croston(),
             ts=time_series_linear,
             alpha=1,
             beta=1,
@@ -391,7 +391,7 @@ class TestADIDAForecast:
             disaggregation_mode="seasonal",
         )
         result = adida_model.fit(
-            model=CRO(),
+            model=Croston(),
             ts=time_series_cyclical,
             alpha=1,
             beta=1,

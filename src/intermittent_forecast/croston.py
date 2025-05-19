@@ -9,32 +9,28 @@ import numpy as np
 import numpy.typing as npt
 from scipy import optimize
 
-from intermittent_forecast import utils
+from intermittent_forecast import error_metrics, utils
 from intermittent_forecast.base_forecaster import (
     BaseForecaster,
     TSArray,
     TSInput,
-)
-from intermittent_forecast.error_metrics import (
-    ErrorMetricFunc,
-    ErrorMetricRegistry,
 )
 
 
 class _CrostonVariant(Enum):
     """Enum for Croston variants."""
 
-    CRO = "CRO"
-    SBA = "SBA"
-    SBJ = "SBJ"
-    TSB = "TSB"
+    CRO = "cro"
+    SBA = "sba"
+    SBJ = "sbj"
+    TSB = "tsb"
 
 
 class _FitOptimisationConfig(NamedTuple):
     """Config to use when fitting the model with optimisation."""
 
     variant: _CrostonVariant
-    optimisation_metric: ErrorMetricFunc
+    optimisation_metric: error_metrics.ErrorMetricFunc
     alpha: float | None
     beta: float | None
 
@@ -114,7 +110,7 @@ class Croston(BaseForecaster):
 
         # Optimise for any smoothing parameters not povided.
         if alpha is None or beta is None:
-            optimsation_metric_func = ErrorMetricRegistry.get(
+            optimsation_metric_func = error_metrics.ErrorMetricRegistry.get(
                 optimisation_metric or "MSE",
             )
 
@@ -130,16 +126,25 @@ class Croston(BaseForecaster):
                 fit_optimisation_config=fit_optimisation_config,
             )
 
-        # Compute forecast using Croston's method.
-        forecast = self._compute_croston_forecast(
-            ts=ts,
-            alpha=alpha,
-            beta=beta,
-            bias_correction=self._get_bias_correction_value(
-                variant=variant_member,
+        if variant_member == _CrostonVariant.TSB:
+            # Compute forecast using TSB if required.
+            forecast = self._compute_tsb_forecast(
+                ts=ts,
+                alpha=alpha,
                 beta=beta,
-            ),
-        )
+            )
+
+        else:
+            # Compute forecast using Croston's method for other variants.
+            forecast = self._compute_croston_forecast(
+                ts=ts,
+                alpha=alpha,
+                beta=beta,
+                bias_correction=self._get_bias_correction_value(
+                    variant=variant_member,
+                    beta=beta,
+                ),
+            )
 
         # Cache results
         self._fitted_model_result = _FittedModelResult(
@@ -282,7 +287,7 @@ class Croston(BaseForecaster):
         alpha = fit_optimisation_config.alpha
         beta = fit_optimisation_config.beta
         error_metric_func = fit_optimisation_config.optimisation_metric
-
+        variant = fit_optimisation_config.variant
         # Set the bounds for the smoothing parameters. If values have been
         # passed, then the bounds will be locked at that value. Else they are
         # set at (0,1).
@@ -297,7 +302,7 @@ class Croston(BaseForecaster):
         min_err = optimize.minimize(
             Croston._cost_function,
             initial_guess,
-            args=(ts, error_metric_func),
+            args=(ts, error_metric_func, variant),
             bounds=[alpha_bounds, beta_bounds],
         )
         optimal_alpha, optimal_beta = min_err.x
