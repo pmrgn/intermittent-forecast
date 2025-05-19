@@ -295,8 +295,7 @@ class Croston(BaseForecaster):
         alpha_bounds = (alpha or 0, alpha or 1)
         beta_bounds = (beta or 0, beta or 1)
 
-        # Set the initial guess as the midpoint of the bounds for alpha and
-        # beta.
+        # Do a quick grid search to find the best initial values.
         initial_guess = Croston._find_best_initial_values(
             ts,
             fit_optimisation_config,
