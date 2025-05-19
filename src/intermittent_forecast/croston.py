@@ -1,10 +1,10 @@
-"""Methods for forecasting intermittent time series using Croston's method."""
+"""Croston's method for forecasting intermittent time series."""
 
 from __future__ import annotations
 
 import itertools
 from enum import Enum
-from typing import Callable, NamedTuple
+from typing import Any, Callable, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
@@ -47,9 +47,24 @@ class _FittedModelResult(NamedTuple):
 
 
 class Croston(BaseForecaster):
-    """Base class for Croston variants.
+    """A class for fitting and forecasting intermittent time series.
 
-    This class implements the core logic for Croston's method.
+    Croston's method deconstructs a time series into separate demand and
+    interval series. It applies a Simple Exponential Smoothing (`SES`)
+    algorithm to the both series, then reconstructs this back into a forecast.
+    This class provides a convenient way to use Croston's method for
+    forecasting. It provides a simple interface to fit the model to a time
+    series, and to generate forecasts.
+
+    When fitting, variants of Croston's can be selected, including
+    Syntetos-Boylan Approximation (`SBA`), Shale-Boylan-Johnston (`SBJ`), and
+    Teunter-Syntetos-Babai (`TSB`). Each allows the selection of the smoothing
+    factors, alpha and beta. If not specified, alpha and beta will be optimised
+    through minimising the error between the fitted time series and the
+    original time series. The error is specified by the `optimisation_metric`,
+    which defaults to the Mean Squared Error (`MSE`), but can also be set to
+    the Mean Absolute Error (`MAE`), Mean Absolute Rate (`MAR`), Mean Squared
+    Rate (`MSR`), or Periods in Stock (`PIS`).
 
     """
 
@@ -87,7 +102,7 @@ class Croston(BaseForecaster):
                 forecast. Defaults to 'MSE'.
 
         Returns:
-            self (CrostonVariant): Fitted model instance.
+            self (Croston): Fitted model instance.
 
         """
         # Validate time series.
@@ -165,6 +180,9 @@ class Croston(BaseForecaster):
     ) -> TSArray:
         """Forecast the time series using the fitted parameters.
 
+        The forecast is computed by appending the out of sample forecast to the
+        fitted values.
+
         Args:
             start (int): Start index of the forecast (inclusive).
             end (int): End index of the forecast (inclusive).
@@ -177,7 +195,7 @@ class Croston(BaseForecaster):
         end = utils.validate_positive_integer(end, name="end")
 
         # Get the fitted model result.
-        fitted_values = self.get_fitted_model_result()
+        fitted_values = self._get_fitted_model_result()
         forecast = fitted_values.ts_fitted
 
         if len(forecast) < end:
@@ -188,7 +206,11 @@ class Croston(BaseForecaster):
 
         return forecast[start:end]
 
-    def get_fitted_model_result(
+    def fit_result(self) -> dict[str, Any]:
+        """Return the fitted results."""
+        return self._get_fitted_model_result()._asdict()
+
+    def _get_fitted_model_result(
         self,
     ) -> _FittedModelResult:
         """Get the fitted results."""
@@ -240,7 +262,7 @@ class Croston(BaseForecaster):
         forecast[p_idx] = f
 
         # Forward fill non-zero forecasted demand values
-        forecast = Croston.forward_fill(forecast)
+        forecast = Croston._forward_fill(forecast)
 
         # Set values before first p_idx to NaN
         forecast[: p_idx[0]] = np.nan
@@ -370,7 +392,7 @@ class Croston(BaseForecaster):
                 beta=beta,
                 bias_correction=bias_correction,
             )
-        print(alpha, beta, error_metric_func(ts, f[:-1]))
+
         return error_metric_func(ts, f[:-1])
 
     @staticmethod
@@ -422,18 +444,10 @@ class Croston(BaseForecaster):
         return array
 
     @staticmethod
-    def forward_fill(arr: TSArray) -> TSArray:
+    def _forward_fill(arr: TSArray) -> TSArray:
         """Forward fills zeros in an array with the last non-zero value."""
         mask = arr != 0
         valid = np.where(mask, arr, 0)
         idx = np.where(mask, np.arange(len(arr)), 0)
         np.maximum.accumulate(idx, out=idx)
         return np.asarray(valid[idx], dtype=np.float64)
-
-
-if __name__ == "__main__":
-    tsb = Croston().fit(
-        ts=np.array([1, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 4, 0, 5, 6]),
-        variant="tsb",
-        optimisation_metric="PIS",
-    )
