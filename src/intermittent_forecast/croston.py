@@ -30,6 +30,7 @@ class _CrostonVariant(Enum):
 class _FitOptimisationConfig(NamedTuple):
     """Config to use when fitting the model with optimisation."""
 
+    ts: TSArray
     variant: _CrostonVariant
     optimisation_metric: error_metrics.ErrorMetricFunc
     alpha: float | None
@@ -116,6 +117,7 @@ class Croston(BaseForecaster):
             )
 
             fit_optimisation_config = _FitOptimisationConfig(
+                ts=ts,
                 variant=variant_member,
                 optimisation_metric=optimsation_metric_func,
                 alpha=alpha,
@@ -123,7 +125,6 @@ class Croston(BaseForecaster):
             )
 
             alpha, beta = self._find_optimal_parameters(
-                ts=ts,
                 fit_optimisation_config=fit_optimisation_config,
             )
 
@@ -281,7 +282,6 @@ class Croston(BaseForecaster):
 
     @staticmethod
     def _find_optimal_parameters(
-        ts: TSArray,
         fit_optimisation_config: _FitOptimisationConfig,
     ) -> tuple[float, float]:
         """Optimise the smoothing parameters alpha and beta."""
@@ -289,6 +289,8 @@ class Croston(BaseForecaster):
         beta = fit_optimisation_config.beta
         error_metric_func = fit_optimisation_config.optimisation_metric
         variant = fit_optimisation_config.variant
+        ts = fit_optimisation_config.ts
+
         # Set the bounds for the smoothing parameters. If values have been
         # passed, then the bounds will be locked at that value. Else they are
         # set at (0,1).
@@ -297,7 +299,6 @@ class Croston(BaseForecaster):
 
         # Do a quick grid search to find the best initial values.
         initial_guess = Croston._find_best_initial_values(
-            ts,
             fit_optimisation_config,
         )
 
@@ -312,7 +313,6 @@ class Croston(BaseForecaster):
 
     @staticmethod
     def _find_best_initial_values(
-        ts: TSArray,
         fit_optimisation_config: _FitOptimisationConfig,
     ) -> tuple[float, float]:
         """Do a grid search to find the initial values."""
@@ -329,7 +329,7 @@ class Croston(BaseForecaster):
         for params in parameter_grid_search:
             error = Croston._cost_function(
                 np.array(params),
-                ts=ts,
+                ts=fit_optimisation_config.ts,
                 error_metric_func=fit_optimisation_config.optimisation_metric,
                 variant=fit_optimisation_config.variant,
             )
