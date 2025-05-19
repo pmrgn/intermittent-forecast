@@ -195,7 +195,7 @@ class Croston(BaseForecaster):
         end = utils.validate_positive_integer(end, name="end")
 
         # Get the fitted model result.
-        fitted_values = self._get_fitted_model_result()
+        fitted_values = self._get_fit_result_if_found()
         forecast = fitted_values.ts_fitted
 
         if len(forecast) < end:
@@ -208,9 +208,9 @@ class Croston(BaseForecaster):
 
     def get_fit_result(self) -> dict[str, Any]:
         """Return the a dictionary of results if model has been fit."""
-        return self._get_fitted_model_result()._asdict()
+        return self._get_fit_result_if_found()._asdict()
 
-    def _get_fitted_model_result(
+    def _get_fit_result_if_found(
         self,
     ) -> _FittedModelResult:
         """Private method for getting fitted results."""

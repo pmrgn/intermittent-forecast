@@ -135,7 +135,7 @@ class DoubleExponentialSmoothing(BaseForecaster):
 
         """
         # Get the fitted model result
-        fitted_params = self._get_fitted_model_result()
+        fitted_params = self._get_fit_result_if_found()
         ts_fitted = fitted_params.ts_fitted
 
         # Determine the forecasting horizon if required
@@ -153,9 +153,9 @@ class DoubleExponentialSmoothing(BaseForecaster):
 
     def get_fit_result(self) -> dict[str, Any]:
         """Return the a dictionary of results if model has been fit."""
-        return self._get_fitted_model_result()._asdict()
+        return self._get_fit_result_if_found()._asdict()
 
-    def _get_fitted_model_result(
+    def _get_fit_result_if_found(
         self,
     ) -> FittedModelResult:
         """Private method for getting the results after fitting the model."""
