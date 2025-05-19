@@ -15,6 +15,8 @@ from intermittent_forecast.base_forecaster import (
     TSArray,
     TSInput,
 )
+from scipy.optimize import differential_evolution
+import itertools
 
 
 class _CrostonVariant(Enum):
@@ -296,9 +298,11 @@ class Croston(BaseForecaster):
 
         # Set the initial guess as the midpoint of the bounds for alpha and
         # beta.
-        initial_guess = np.array(
-            [sum(alpha_bounds) / 2, sum(beta_bounds) / 2],
+        initial_guess = Croston._find_best_initial_values(
+            ts,
+            fit_optimisation_config,
         )
+
         min_err = optimize.minimize(
             Croston._cost_function,
             initial_guess,
@@ -307,6 +311,35 @@ class Croston(BaseForecaster):
         )
         optimal_alpha, optimal_beta = min_err.x
         return optimal_alpha, optimal_beta
+
+    @staticmethod
+    def _find_best_initial_values(
+        ts: TSArray,
+        fit_optimisation_config: _FitOptimisationConfig,
+    ) -> tuple[float, float]:
+        """Do a grid search to find the initial values."""
+        # Lock values if set, else create a grid.
+        alpha = fit_optimisation_config.alpha
+        alpha_grid = [alpha] if alpha else [0, 0.5, 1]
+        beta = fit_optimisation_config.beta
+        beta_grid = [beta] if beta else [0, 0.5, 1]
+        parameter_grid_search = list(itertools.product(alpha_grid, beta_grid))
+
+        # Find the best initial values
+        best_error = np.inf
+        best_params = (0.5, 0.5)
+        for params in parameter_grid_search:
+            error = Croston._cost_function(
+                np.array(params),
+                ts=ts,
+                error_metric_func=fit_optimisation_config.optimisation_metric,
+                variant=fit_optimisation_config.variant,
+            )
+            if error < best_error:
+                best_error = error
+                best_params = params
+
+        return best_params
 
     @staticmethod
     def _cost_function(
@@ -339,6 +372,7 @@ class Croston(BaseForecaster):
                 beta=beta,
                 bias_correction=bias_correction,
             )
+        print(alpha, beta, error_metric_func(ts, f[:-1]))
         return error_metric_func(ts, f[:-1])
 
     @staticmethod
@@ -397,3 +431,11 @@ class Croston(BaseForecaster):
         idx = np.where(mask, np.arange(len(arr)), 0)
         np.maximum.accumulate(idx, out=idx)
         return np.asarray(valid[idx], dtype=np.float64)
+
+
+if __name__ == "__main__":
+    tsb = Croston().fit(
+        ts=np.array([1, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 4, 0, 5, 6]),
+        variant="tsb",
+        optimisation_metric="PIS",
+    )
