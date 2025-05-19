@@ -104,7 +104,7 @@ class TestCROFit:
         """Test alpha can be set while beta is optimised."""
         alpha = 0.35
         model = Croston().fit(ts=basic_time_series, alpha=alpha)
-        fitted_alpha = model.fit_result().get("alpha")
+        fitted_alpha = model.get_fit_result().get("alpha")
         if alpha != fitted_alpha:
             err_msg = f"Expected alpha to be {alpha}. Got: {fitted_alpha}"
             raise ValueError(err_msg)

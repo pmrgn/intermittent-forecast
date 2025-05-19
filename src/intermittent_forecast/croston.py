@@ -206,14 +206,14 @@ class Croston(BaseForecaster):
 
         return forecast[start:end]
 
-    def fit_result(self) -> dict[str, Any]:
-        """Return the fitted results."""
+    def get_fit_result(self) -> dict[str, Any]:
+        """Return the a dictionary of results if model has been fit."""
         return self._get_fitted_model_result()._asdict()
 
     def _get_fitted_model_result(
         self,
     ) -> _FittedModelResult:
-        """Get the fitted results."""
+        """Private method for getting fitted results."""
         if not self._fitted_model_result or not isinstance(
             self._fitted_model_result,
             _FittedModelResult,

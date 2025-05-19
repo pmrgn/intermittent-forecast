@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Callable, NamedTuple
+from typing import Any, Callable, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
@@ -200,7 +200,7 @@ class TripleExponentialSmoothing(BaseForecaster):
 
         """
         # Get the fitted model result
-        fitted_params = self.get_fitted_model_result()
+        fitted_params = self._get_fitted_model_result()
         ts_fitted = fitted_params.ts_fitted
 
         # Determine the forecasting horizon if required
@@ -255,10 +255,14 @@ class TripleExponentialSmoothing(BaseForecaster):
 
         return ts_fitted[start : end + 1]
 
-    def get_fitted_model_result(
+    def get_fit_result(self) -> dict[str, Any]:
+        """Return the a dictionary of results if model has been fit."""
+        return self._get_fitted_model_result()._asdict()
+
+    def _get_fitted_model_result(
         self,
     ) -> FittedModelResult:
-        """Get the results after fitting the model."""
+        """Private method for getting the results after fitting the model."""
         if not self._fitted_model_result or not isinstance(
             self._fitted_model_result,
             FittedModelResult,

@@ -190,16 +190,20 @@ class ADIDA:
 
         forecast = self._disaggregate(
             config=self._config,
-            fitted_result=self.get_fitted_model_result(),
+            fitted_result=self._get_fitted_model_result(),
             end=end,
         )
 
         return forecast[start : end + 1]
 
-    def get_fitted_model_result(
+    def get_fit_result(self) -> dict[str, Any]:
+        """Return the a dictionary of results if model has been fit."""
+        return self._get_fitted_model_result()._asdict()
+
+    def _get_fitted_model_result(
         self,
     ) -> ADIDAFittedResult:
-        """Get the fitted model."""
+        """Private method for geting the fitted model."""
         if not self._adida_fitted_result or not isinstance(
             self._adida_fitted_result,
             ADIDAFittedResult,

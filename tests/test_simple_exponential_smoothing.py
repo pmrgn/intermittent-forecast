@@ -28,7 +28,7 @@ class TestSimpleExponentialSmoothingFit:
         ts_linear: TSArray,
     ) -> None:
         ses = SimpleExponentialSmoothing().fit(ts=ts_linear)
-        alpha_optimised = ses.get_fitted_model_result().alpha
+        alpha_optimised = ses.get_fit_result()["alpha"]
         if alpha_optimised != 1:
             err_msg = f"Expected alpha to be 1. Got: {alpha_optimised}"
             raise ValueError(err_msg)
