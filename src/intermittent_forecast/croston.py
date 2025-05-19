@@ -104,6 +104,13 @@ class Croston(BaseForecaster):
         Returns:
             self (Croston): Fitted model instance.
 
+        Example:
+        ```
+        >>> croston = Croston()
+        >>> croston.fit(ts, variant="SBA")
+        >>> croston.forecast(start=0, end=1)
+        ```
+
         """
         # Validate time series.
         ts = utils.validate_time_series(ts)
@@ -207,7 +214,7 @@ class Croston(BaseForecaster):
         return forecast[start:end]
 
     def get_fit_result(self) -> dict[str, Any]:
-        """Return the a dictionary of results if model has been fit."""
+        """Return a dictionary of results if model has been fit."""
         return self._get_fit_result_if_found()._asdict()
 
     def _get_fit_result_if_found(
