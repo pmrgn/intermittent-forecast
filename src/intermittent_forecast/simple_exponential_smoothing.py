@@ -59,7 +59,7 @@ class SimpleExponentialSmoothing(BaseForecaster):
         array([40.        , 40.        , 36.1204974 , 35.75824969, 37.45286502,
                36.0132899 , 31.15961513, 33.04776416, 28.82952791])
 
-        >>> # Access a dict of the fitted values, get smoothing parameter beta.
+        >>> # Access a dict of the fitted values, get smoothing parameter alpha.
         >>> result = ses.get_fit_result()
         >>> result["alpha"]
         0.32329188326949737

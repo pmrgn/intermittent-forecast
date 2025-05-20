@@ -4,6 +4,7 @@ loaders:
     modules:
       - intermittent_forecast.croston
       - intermittent_forecast.simple_exponential_smoothing
+      - intermittent_forecast.double_exponential_smoothing
 
 renderer:
   type: markdown
