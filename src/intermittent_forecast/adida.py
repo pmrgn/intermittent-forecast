@@ -50,8 +50,6 @@ class _ADIDAFittedResult(NamedTuple):
 class ADIDA:
     """Aggregate-Disaggregate Intermittent Demand Approach (ADIDA).
 
-    Aggregate-Disaggregate Intermittent Demand Approach (ADIDA).
-
     ADIDA is a forecasting methodology designed for handling intermittent time
     series. The approach helps improve forecast accuracy by transforming the
     problem into a more stable one via temporal aggregation.
@@ -86,20 +84,26 @@ class ADIDA:
         ...     0, 0, 0, 8, 3, 0, 1,
         ...     0, 1, 0, 4, 3, 0, 0,
         ... ]
+
         >>> # Initialise ADIDA model.
         >>> adida = ADIDA(
         ...     aggregation_period=7,
         ...     aggregation_mode="block",
         ...     disaggregation_mode="seasonal",
         ... )
+
         >>> # Import a forecasting model to use on the aggregated series.
         >>> from intermittent_forecast import simple_exponential_smoothing
-        >>> # Fit the ADIDA model.
+
+        >>> # Fit using ADIDA, passing in an instance of the forecasting model.
+        >>> # Any valid keyword arguments used by the model can be passed in,
+        >>> # e.g. alpha for SimpleExponentialSmoothing.
         >>> adida = adida.fit(
         ...     model=simple_exponential_smoothing.SimpleExponentialSmoothing(),
         ...     ts=ts,
         ...     alpha=0.3,
         ... )
+
         >>> # Forecast the next 7 periods.
         >>> adida.forecast(start=len(ts), end=len(ts)+7)
         array([0.97108571, 0.24277143, 1.21385714, 4.12711429, 1.6994    ,
