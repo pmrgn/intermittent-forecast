@@ -1,0 +1,14 @@
+loaders:
+  - type: python
+    search_path: ["./src"]
+    modules:
+      - intermittent_forecast.croston
+
+renderer:
+  type: markdown
+  code_lang: true
+  code_headers: true
+  descriptive_class_title: false
+  add_method_class_prefix: true
+  signature_in_header: false
+  render_toc: true

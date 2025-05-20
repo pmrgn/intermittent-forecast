@@ -66,6 +66,28 @@ class Croston(BaseForecaster):
     the Mean Absolute Error (`MAE`), Mean Absolute Rate (`MAR`), Mean Squared
     Rate (`MSR`), or Periods in Stock (`PIS`).
 
+    Example:
+        >>> # Initialise an instance of Croston, fit a time series and create
+        >>> # a forecast.
+        >>> ts = [0, 3, 0, 4, 0, 0, 0, 2, 0]
+        >>> cro = Croston().fit(ts=ts, alpha=0.5, beta=0.2)
+        >>> cro.forecast(start=0, end=10)
+        array([       nan,        nan, 1.125     , 1.125     , 1.38157895,
+               1.38157895, 1.38157895, 1.38157895, 0.97287736, 0.97287736])
+
+        >>> # Smoothing parameters can instead be optimised with a chosen
+        >>> # error metric.
+        >>> cro = Croston().fit(ts=ts, optimisation_metric="MSR")
+        >>> cro.forecast(start=0, end=10)
+        array([       nan,        nan, 1.125     , 1.125     , 1.18876368,
+               1.18876368, 1.18876368, 1.18876368, 1.05619218, 1.05619218])
+
+        >>> # Access a dict of the fitted values, get smoothing parameter beta.
+        >>> result = cro.get_fit_result()
+        >>> result["beta"]
+        0.2145546005097181
+
+
     """
 
     def __init__(self) -> None:  # noqa: D107
@@ -103,13 +125,6 @@ class Croston(BaseForecaster):
 
         Returns:
             self (Croston): Fitted model instance.
-
-        Example:
-        ```
-        >>> croston = Croston()
-        >>> croston.fit(ts, variant="SBA")
-        >>> croston.forecast(start=0, end=1)
-        ```
 
         """
         # Validate time series.
@@ -458,3 +473,17 @@ class Croston(BaseForecaster):
         idx = np.where(mask, np.arange(len(arr)), 0)
         np.maximum.accumulate(idx, out=idx)
         return np.asarray(valid[idx], dtype=np.float64)
+
+
+if __name__ == "__main__":
+    from intermittent_forecast.croston import Croston
+
+    ts = [0, 3, 0, 4, 0, 0, 0, 2, 0]
+    cro = Croston().fit(ts=ts, alpha=0.5, beta=0.2)
+    cro.forecast(start=0, end=10)
+    print(cro.forecast(start=0, end=10))
+
+    # Optimise smoothing parameters using the Mean Squared Rate (MSR) metric.
+    cro.fit(ts=ts, optimisation_metric="MSR")
+    cro.forecast(start=0, end=10)
+    breakpoint()
