@@ -56,7 +56,7 @@ class TestADIDAAggregation:
         expected: TSArray,
         even_intermittent_time_series: TSArray,
     ) -> None:
-        result = ADIDA._block_aggregation(
+        result = ADIDA._block_aggregation(  # noqa: SLF001
             even_intermittent_time_series,
             window_size=size,
         )
@@ -80,7 +80,7 @@ class TestADIDAAggregation:
         expected: TSArray,
         odd_time_series: TSArray,
     ) -> None:
-        result = ADIDA._block_aggregation(
+        result = ADIDA._block_aggregation(  # noqa: SLF001
             odd_time_series,
             window_size=size,
         )
@@ -104,7 +104,7 @@ class TestADIDAAggregation:
         expected: TSArray,
         even_intermittent_time_series: TSArray,
     ) -> None:
-        result = ADIDA._sliding_aggregation(
+        result = ADIDA._sliding_aggregation(  # noqa: SLF001
             even_intermittent_time_series,
             window_size=size,
         )
@@ -156,7 +156,7 @@ class TestADIDADisaggregation:
         expected: TSArray,
     ) -> None:
         aggregated_ts = np.array([4, 8, 0, 9])
-        result = ADIDA._block_disaggregation(
+        result = ADIDA._block_disaggregation(  # noqa: SLF001
             aggregated_ts=aggregated_ts,
             window_size=window_size,
             base_ts_length=base_ts_length,
@@ -177,7 +177,7 @@ class TestADIDADisaggregation:
         expected: TSArray,
     ) -> None:
         ts = np.array([4, 7, 2, 9, 0, 6])
-        result = ADIDA._sliding_disaggregation(
+        result = ADIDA._sliding_disaggregation(  # noqa: SLF001
             ts=ts,
             window_size=size,
         )
@@ -216,7 +216,7 @@ class TestADIDATemporalWeights:
         cycle: int,
         expected: TSArray,
     ) -> None:
-        result = ADIDA._calculate_temporal_weights(
+        result = ADIDA._calculate_temporal_weights(  # noqa: SLF001
             ts=ts,
             cycle_length=cycle,
         )
@@ -248,7 +248,7 @@ class TestADIDATemporalWeights:
         temporal_weights: npt.NDArray[np.float64],
         expected: TSArray,
     ) -> None:
-        result = ADIDA._apply_temporal_weights(
+        result = ADIDA._apply_temporal_weights(  # noqa: SLF001
             ts=ts,
             weights=temporal_weights,
         )
@@ -272,11 +272,11 @@ class TestADIDATemporalWeights:
         ts_agg: TSArray,
         expected: TSArray,
     ) -> None:
-        temporal_weights = ADIDA._calculate_temporal_weights(
+        temporal_weights = ADIDA._calculate_temporal_weights(  # noqa: SLF001
             ts=ts,
             cycle_length=cycle,
         )
-        result = ADIDA._apply_temporal_weights(
+        result = ADIDA._apply_temporal_weights(  # noqa: SLF001
             ts=ts_agg,
             weights=temporal_weights,
         )

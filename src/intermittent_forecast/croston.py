@@ -473,17 +473,3 @@ class Croston(BaseForecaster):
         idx = np.where(mask, np.arange(len(arr)), 0)
         np.maximum.accumulate(idx, out=idx)
         return np.asarray(valid[idx], dtype=np.float64)
-
-
-if __name__ == "__main__":
-    from intermittent_forecast.croston import Croston
-
-    ts = [0, 3, 0, 4, 0, 0, 0, 2, 0]
-    cro = Croston().fit(ts=ts, alpha=0.5, beta=0.2)
-    cro.forecast(start=0, end=10)
-    print(cro.forecast(start=0, end=10))
-
-    # Optimise smoothing parameters using the Mean Squared Rate (MSR) metric.
-    cro.fit(ts=ts, optimisation_metric="MSR")
-    cro.forecast(start=0, end=10)
-    breakpoint()
