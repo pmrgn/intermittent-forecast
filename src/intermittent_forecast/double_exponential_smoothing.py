@@ -115,8 +115,7 @@ class DoubleExponentialSmoothing(BaseForecaster):
                 in-sample forecast.
 
         Returns:
-        -------
-        self : Fitted model instance.
+            self (DoubleExponentialSmoothing): Fitted model instance.
 
         """
         # Validate the time series.

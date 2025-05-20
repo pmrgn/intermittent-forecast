@@ -17,29 +17,29 @@ from intermittent_forecast.base_forecaster import (
 )
 
 
-class AggregationMode(Enum):
+class _AggregationMode(Enum):
     """Enum for aggregation modes."""
 
     BLOCK = "block"
     SLIDING = "sliding"
 
 
-class DisaggregationMode(Enum):
+class _DisaggregationMode(Enum):
     """Enum for disaggregation modes."""
 
     SEASONAL = "seasonal"
     UNIFORM = "uniform"
 
 
-class ADIDAConfig(NamedTuple):
+class _ADIDAConfig(NamedTuple):
     """Configuration for ADIDA model initilisation."""
 
     aggregation_period: int
-    aggregation_mode: AggregationMode
-    disaggregation_mode: DisaggregationMode
+    aggregation_mode: _AggregationMode
+    disaggregation_mode: _DisaggregationMode
 
 
-class ADIDAFittedResult(NamedTuple):
+class _ADIDAFittedResult(NamedTuple):
     """Fitted result for ADIDA model."""
 
     aggregated_model: BaseForecaster
@@ -50,16 +50,60 @@ class ADIDAFittedResult(NamedTuple):
 class ADIDA:
     """Aggregate-Disaggregate Intermittent Demand Approach (ADIDA).
 
-    Args:
-        aggregation_period (int): Number of time periods to aggregate.
-        aggregation_mode (str): The aggregation mode, either "sliding" or
-            "block".
-        disaggregation_mode (str): The disaggregation mode, either
-            "seasonal" or"uniform".
+    Aggregate-Disaggregate Intermittent Demand Approach (ADIDA).
 
-    Methods:
-        fit: Fit the model. forecast: Forecast the time series using the fitted
-            parameters.
+    ADIDA is a forecasting methodology designed for handling intermittent time
+    series. The approach helps improve forecast accuracy by transforming the
+    problem into a more stable one via temporal aggregation.
+
+    The method involves aggregating a high-frequency time series (e.g., daily
+    observations) into a lower-frequency series (e.g., weekly) as a means to
+    reduce variability. This allows for a range of forecasting models to be
+    applied to the aggregated series, e.g. Exponential Smoothing. Once a model
+    has been fit to the aggregated series, the disaggregation process is
+    performed to return it to the original time series.
+
+    Args:
+        aggregation_period (int): Number of time periods to aggregate. E.g, a
+            period of 7 would be used to aggregate a daily time series into a
+            weekly time series.
+        aggregation_mode (str): The aggregation mode, either "sliding" or
+            "block". A sliding window will aggregate the time series by moving
+            the window one time period at a time. A block window will aggregate
+            the time series by moving the window one block at a time. the time
+            series by moving the window one block at a time.
+        disaggregation_mode (str): The disaggregation mode, either
+            "seasonal" or"uniform". A seasonal disaggregation will disaggregate
+            the time series by calculating the proportion of demand for each
+            step in the cycle. A uniform disaggregation will disaggregate the
+            time series by evenly distributing the demand across the cycle.
+
+    Example:
+        >>> # Example intermittent time series.
+        >>> ts = [
+        ...     3, 0, 0, 4, 0, 0, 0,
+        ...     1, 0, 5, 1, 1, 0, 0,
+        ...     0, 0, 0, 8, 3, 0, 1,
+        ...     0, 1, 0, 4, 3, 0, 0,
+        ... ]
+        >>> # Initialise ADIDA model.
+        >>> adida = ADIDA(
+        ...     aggregation_period=7,
+        ...     aggregation_mode="block",
+        ...     disaggregation_mode="seasonal",
+        ... )
+        >>> # Import a forecasting model to use on the aggregated series.
+        >>> from intermittent_forecast import simple_exponential_smoothing
+        >>> # Fit the ADIDA model.
+        >>> adida = adida.fit(
+        ...     model=simple_exponential_smoothing.SimpleExponentialSmoothing(),
+        ...     ts=ts,
+        ...     alpha=0.3,
+        ... )
+        >>> # Forecast the next 7 periods.
+        >>> adida.forecast(start=len(ts), end=len(ts)+7)
+        array([0.97108571, 0.24277143, 1.21385714, 4.12711429, 1.6994    ,
+               0.        , 0.24277143, 0.97108571])
 
     """
 
@@ -76,23 +120,23 @@ class ADIDA:
 
         aggregation_mode_member = utils.get_enum_member_from_str(
             member_str=aggregation_mode,
-            enum_class=AggregationMode,
+            enum_class=_AggregationMode,
             member_name="aggregation_mode",
         )
 
         disaggregation_mode_member = utils.get_enum_member_from_str(
             member_str=disaggregation_mode,
-            enum_class=DisaggregationMode,
+            enum_class=_DisaggregationMode,
             member_name="disaggregation_mode",
         )
 
-        self._config = ADIDAConfig(
+        self._config = _ADIDAConfig(
             aggregation_period=aggregation_period,
             aggregation_mode=aggregation_mode_member,
             disaggregation_mode=disaggregation_mode_member,
         )
 
-        self._adida_fitted_result: ADIDAFittedResult | None = None
+        self._adida_fitted_result: _ADIDAFittedResult | None = None
 
     def fit(
         self,
@@ -103,14 +147,17 @@ class ADIDA:
         """Aggregate the time series and fit using the forecasting model.
 
         Args:
-            model (T_BaseForecaster): Forecasting model class to use on the
-                aggregated time series. Examples include CRO, SBA, TSB,
-                and TripleExponentialSmoothing.
+            model (T_BaseForecaster): Forecasting model to use on the
+                aggregated time series, which can be any of the BaseForecaster
+                class instances, e.g. Croston, SimpleExponentialSmoothing.
             ts (ArrayLike): Time series to fit.
             **kwargs (Any): Additional keyword arguments to pass to the
                 forecasting model. Refer to the documentation for the `fit`
-                method of the forecasting model you are using for valid
-                keyword arguments.
+                method of the forecasting model you are using for valid keyword
+                arguments.
+
+        Returns:
+            self (ADIDA): Fitted model instance.
 
         """
         if not isinstance(model, BaseForecaster):
@@ -123,13 +170,13 @@ class ADIDA:
         # Aggregate the time series
         ts = utils.validate_time_series(ts)
         match self._config.aggregation_mode:
-            case AggregationMode.SLIDING:
-                aggregated_ts = self.sliding_aggregation(
+            case _AggregationMode.SLIDING:
+                aggregated_ts = self._sliding_aggregation(
                     ts=ts,
                     window_size=self._config.aggregation_period,
                 )
-            case AggregationMode.BLOCK:
-                aggregated_ts = self.block_aggregation(
+            case _AggregationMode.BLOCK:
+                aggregated_ts = self._block_aggregation(
                     ts=ts,
                     window_size=self._config.aggregation_period,
                 )
@@ -146,14 +193,14 @@ class ADIDA:
         # If using a seasonal disaggregation method, calculate the seasonal
         # weights, which will be used later to disaggregate the forecast.
         temporal_weights = np.array([])
-        if self._config.disaggregation_mode == DisaggregationMode.SEASONAL:
-            temporal_weights = self.calculate_temporal_weights(
+        if self._config.disaggregation_mode == _DisaggregationMode.SEASONAL:
+            temporal_weights = self._calculate_temporal_weights(
                 ts=ts,
                 cycle_length=self._config.aggregation_period,
             )
 
         # Cache results
-        self._adida_fitted_result = ADIDAFittedResult(
+        self._adida_fitted_result = _ADIDAFittedResult(
             aggregated_model=aggregated_model,
             ts_base=ts,
             temporal_weights=temporal_weights,
@@ -193,11 +240,11 @@ class ADIDA:
 
     def _get_fit_result_if_found(
         self,
-    ) -> ADIDAFittedResult:
+    ) -> _ADIDAFittedResult:
         """Private method for geting the fitted model."""
         if not self._adida_fitted_result or not isinstance(
             self._adida_fitted_result,
-            ADIDAFittedResult,
+            _ADIDAFittedResult,
         ):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
@@ -208,8 +255,8 @@ class ADIDA:
 
     @staticmethod
     def _disaggregate(
-        config: ADIDAConfig,
-        fitted_result: ADIDAFittedResult,
+        config: _ADIDAConfig,
+        fitted_result: _ADIDAFittedResult,
         end: int,
     ) -> TSArray:
         """Disaggregate the forecasted values."""
@@ -224,36 +271,36 @@ class ADIDA:
         # Prepare for disaggregation, which depends on how the forecast was
         # aggregated.
         match config.aggregation_mode:
-            case AggregationMode.SLIDING:
-                forecast_disaggregated = ADIDA.sliding_disaggregation(
+            case _AggregationMode.SLIDING:
+                forecast_disaggregated = ADIDA._sliding_disaggregation(
                     ts=aggregated_forecast,
                     window_size=config.aggregation_period,
                 )
 
-            case AggregationMode.BLOCK:
+            case _AggregationMode.BLOCK:
                 # Block aggregation will return the series to
-                forecast_disaggregated = ADIDA.block_disaggregation(
+                forecast_disaggregated = ADIDA._block_disaggregation(
                     aggregated_ts=aggregated_forecast,
                     window_size=config.aggregation_period,
                     base_ts_length=len(fitted_result.ts_base),
                 )
 
         match config.disaggregation_mode:
-            case DisaggregationMode.SEASONAL:
+            case _DisaggregationMode.SEASONAL:
                 # Apply the temporal weights to the forecast
-                forecast_disaggregated = ADIDA.apply_temporal_weights(
+                forecast_disaggregated = ADIDA._apply_temporal_weights(
                     ts=forecast_disaggregated,
                     weights=fitted_result.temporal_weights,
                 )
 
-            case DisaggregationMode.UNIFORM:
+            case _DisaggregationMode.UNIFORM:
                 # A uniform disaggregation requires no further processing.
                 pass
 
         return forecast_disaggregated
 
     @staticmethod
-    def sliding_aggregation(
+    def _sliding_aggregation(
         ts: TSArray,
         window_size: int,
     ) -> TSArray:
@@ -261,7 +308,7 @@ class ADIDA:
         return np.convolve(a=ts, v=np.ones(window_size), mode="valid")
 
     @staticmethod
-    def sliding_disaggregation(
+    def _sliding_disaggregation(
         ts: TSArray,
         window_size: int,
     ) -> TSArray:
@@ -279,7 +326,7 @@ class ADIDA:
         )
 
     @staticmethod
-    def block_aggregation(
+    def _block_aggregation(
         ts: TSArray,
         window_size: int,
     ) -> TSArray:
@@ -306,7 +353,7 @@ class ADIDA:
         )
 
     @staticmethod
-    def block_disaggregation(
+    def _block_disaggregation(
         aggregated_ts: TSArray,
         window_size: int,
         base_ts_length: int,
@@ -325,7 +372,7 @@ class ADIDA:
         return ret
 
     @staticmethod
-    def calculate_temporal_weights(
+    def _calculate_temporal_weights(
         ts: TSArray,
         cycle_length: int,
     ) -> TSArray:
@@ -359,7 +406,7 @@ class ADIDA:
         return utils.validate_array_is_numeric(temporal_weights)
 
     @staticmethod
-    def apply_temporal_weights(
+    def _apply_temporal_weights(
         ts: TSArray,
         weights: TSArray,
     ) -> TSArray:
