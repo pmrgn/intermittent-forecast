@@ -2,29 +2,14 @@
 
 * [intermittent\_forecast.adida](#intermittent_forecast.adida)
   * [ADIDA](#intermittent_forecast.adida.ADIDA)
-    * [fit](#intermittent_forecast.adida.ADIDA.fit)
-    * [forecast](#intermittent_forecast.adida.ADIDA.forecast)
-    * [get\_fit\_result](#intermittent_forecast.adida.ADIDA.get_fit_result)
 * [intermittent\_forecast.croston](#intermittent_forecast.croston)
   * [Croston](#intermittent_forecast.croston.Croston)
-    * [fit](#intermittent_forecast.croston.Croston.fit)
-    * [forecast](#intermittent_forecast.croston.Croston.forecast)
-    * [get\_fit\_result](#intermittent_forecast.croston.Croston.get_fit_result)
 * [intermittent\_forecast.simple\_exponential\_smoothing](#intermittent_forecast.simple_exponential_smoothing)
   * [SimpleExponentialSmoothing](#intermittent_forecast.simple_exponential_smoothing.SimpleExponentialSmoothing)
-    * [fit](#intermittent_forecast.simple_exponential_smoothing.SimpleExponentialSmoothing.fit)
-    * [forecast](#intermittent_forecast.simple_exponential_smoothing.SimpleExponentialSmoothing.forecast)
-    * [get\_fit\_result](#intermittent_forecast.simple_exponential_smoothing.SimpleExponentialSmoothing.get_fit_result)
 * [intermittent\_forecast.double\_exponential\_smoothing](#intermittent_forecast.double_exponential_smoothing)
   * [DoubleExponentialSmoothing](#intermittent_forecast.double_exponential_smoothing.DoubleExponentialSmoothing)
-    * [fit](#intermittent_forecast.double_exponential_smoothing.DoubleExponentialSmoothing.fit)
-    * [forecast](#intermittent_forecast.double_exponential_smoothing.DoubleExponentialSmoothing.forecast)
-    * [get\_fit\_result](#intermittent_forecast.double_exponential_smoothing.DoubleExponentialSmoothing.get_fit_result)
 * [intermittent\_forecast.triple\_exponential\_smoothing](#intermittent_forecast.triple_exponential_smoothing)
   * [TripleExponentialSmoothing](#intermittent_forecast.triple_exponential_smoothing.TripleExponentialSmoothing)
-    * [fit](#intermittent_forecast.triple_exponential_smoothing.TripleExponentialSmoothing.fit)
-    * [forecast](#intermittent_forecast.triple_exponential_smoothing.TripleExponentialSmoothing.forecast)
-    * [get\_fit\_result](#intermittent_forecast.triple_exponential_smoothing.TripleExponentialSmoothing.get_fit_result)
 
 <a id="intermittent_forecast.adida"></a>
 
@@ -39,8 +24,6 @@ Methods for forecasting intermittent time series using ADIDA method.
 ```python
 class ADIDA()
 ```
-
-Aggregate-Disaggregate Intermittent Demand Approach (ADIDA).
 
 Aggregate-Disaggregate Intermittent Demand Approach (ADIDA).
 
@@ -73,7 +56,7 @@ performed to return it to the original time series.
   
 
 **Example**:
-```python
+
   >>> # Example intermittent time series.
   >>> ts = [
   ...     3, 0, 0, 4, 0, 0, 0,
@@ -91,7 +74,10 @@ performed to return it to the original time series.
   
   >>> # Import a forecasting model to use on the aggregated series.
   >>> from intermittent_forecast import simple_exponential_smoothing
-  >>> # Fit the ADIDA model.
+  
+  >>> # Fit using ADIDA, passing in an instance of the forecasting model.
+  >>> # Any valid keyword arguments used by the model can be passed in,
+  >>> # e.g. alpha for SimpleExponentialSmoothing.
   >>> adida = adida.fit(
   ...     model=simple_exponential_smoothing.SimpleExponentialSmoothing(),
   ...     ts=ts,
@@ -102,7 +88,7 @@ performed to return it to the original time series.
   >>> adida.forecast(start=len(ts), end=len(ts)+7)
   array([0.97108571, 0.24277143, 1.21385714, 4.12711429, 1.6994    ,
   0.        , 0.24277143, 0.97108571])
-```
+
 <a id="intermittent_forecast.adida.ADIDA.fit"></a>
 
 #### `ADIDA.fit`

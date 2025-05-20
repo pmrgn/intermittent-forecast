@@ -8,12 +8,15 @@ loaders:
       - intermittent_forecast.double_exponential_smoothing
       - intermittent_forecast.triple_exponential_smoothing
 
-
 renderer:
   type: markdown
+  classdef_code_block: true
   code_lang: true
   code_headers: true
   descriptive_class_title: false
   add_method_class_prefix: true
   signature_in_header: false
   render_toc: true
+  toc_maxdepth: 1
+  filename: docs.md
+
