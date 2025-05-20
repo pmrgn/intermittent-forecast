@@ -156,7 +156,7 @@ class TripleExponentialSmoothing(BaseForecaster):
                 in-sample forecast.
 
         Returns:
-            TripleExponentialSmoothing: Fitted model instance.
+            self (TripleExponentialSmoothing): Fitted model instance.
 
         """
         # Validate trend and seasonal types, and convert to enum members.

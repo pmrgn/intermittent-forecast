@@ -5,6 +5,8 @@ loaders:
       - intermittent_forecast.croston
       - intermittent_forecast.simple_exponential_smoothing
       - intermittent_forecast.double_exponential_smoothing
+      - intermittent_forecast.triple_exponential_smoothing
+      - intermittent_forecast.adida
 
 renderer:
   type: markdown
