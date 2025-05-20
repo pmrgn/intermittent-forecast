@@ -11,8 +11,8 @@ from intermittent_forecast.error_metrics import (
     ErrorMetricRegistry,
 )
 from intermittent_forecast.triple_exponential_smoothing import (
-    SmoothingType,
     TripleExponentialSmoothing,
+    _SmoothingType,
 )
 
 
@@ -38,7 +38,7 @@ class TestTripleExponentialSmoothingFit:
             TripleExponentialSmoothing().fit(
                 ts=ts_intermittent,
                 period=2,
-                trend_type=SmoothingType.MUL.value,
+                trend_type=_SmoothingType.MUL.value,
             )
 
     def test_raises_with_multiplicative_seasonality_and_non_zero_series(
@@ -52,7 +52,7 @@ class TestTripleExponentialSmoothingFit:
             TripleExponentialSmoothing().fit(
                 ts=ts_intermittent,
                 period=2,
-                seasonal_type=SmoothingType.MUL.value,
+                seasonal_type=_SmoothingType.MUL.value,
             )
 
     def test_alpha_can_be_set_with_beta_and_gamma_optimised(
@@ -85,8 +85,8 @@ class TestTripleExponentialSmoothingForecast:
             beta=0.2,
             gamma=0.1,
             period=4,
-            trend_type=SmoothingType.ADD.value,
-            seasonal_type=SmoothingType.ADD.value,
+            trend_type=_SmoothingType.ADD.value,
+            seasonal_type=_SmoothingType.ADD.value,
         )
         forecast_insample = model.forecast(start=0, end=n_obs - 1)
         expected_insample = [
@@ -136,8 +136,8 @@ class TestTripleExponentialSmoothingForecast:
             beta=0.2,
             gamma=0.1,
             period=4,
-            trend_type=SmoothingType.ADD.value,
-            seasonal_type=SmoothingType.MUL.value,
+            trend_type=_SmoothingType.ADD.value,
+            seasonal_type=_SmoothingType.MUL.value,
         )
         forecast_insample = model.forecast(start=0, end=n_obs - 1)
         expected_insample = [
@@ -187,8 +187,8 @@ class TestTripleExponentialSmoothingForecast:
             beta=0.2,
             gamma=0.1,
             period=4,
-            trend_type=SmoothingType.MUL.value,
-            seasonal_type=SmoothingType.MUL.value,
+            trend_type=_SmoothingType.MUL.value,
+            seasonal_type=_SmoothingType.MUL.value,
         )
         forecast_insample = model.forecast(start=0, end=n_obs - 1)
         expected_insample = [
@@ -238,8 +238,8 @@ class TestTripleExponentialSmoothingForecast:
             beta=0.2,
             gamma=0.1,
             period=4,
-            trend_type=SmoothingType.MUL.value,
-            seasonal_type=SmoothingType.ADD.value,
+            trend_type=_SmoothingType.MUL.value,
+            seasonal_type=_SmoothingType.ADD.value,
         )
         forecast_insample = model.forecast(start=0, end=n_obs - 1)
         expected_insample = [
@@ -293,8 +293,8 @@ def get_test_cases() -> list[tuple[dict[str, float], dict[str, Any], Any]]:
 
     smoothing_combinations = list(
         itertools.product(
-            [SmoothingType.ADD, SmoothingType.MUL],
-            [SmoothingType.ADD, SmoothingType.MUL],
+            [_SmoothingType.ADD, _SmoothingType.MUL],
+            [_SmoothingType.ADD, _SmoothingType.MUL],
         ),
     )
     error_metrics_str = ErrorMetricRegistry.get_registry().keys()
@@ -315,7 +315,7 @@ class TestTripleExponentialSmoothingOptimisedForecast:
         self,
         ts_all_positive: TSArray,
         smoothing_params: dict[str, float],
-        smoothing_type: dict[str, SmoothingType],
+        smoothing_type: dict[str, _SmoothingType],
         error_metric: str,
     ) -> None:
         """Test that an optimised forecast produces minimised error.
