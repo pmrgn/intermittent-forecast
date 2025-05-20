@@ -61,15 +61,6 @@ class ADIDA:
         fit: Fit the model. forecast: Forecast the time series using the fitted
             parameters.
 
-    Examples:
-    ```
-    >>> model = ADIDA(
-    >>>     aggregation_period=12,
-    >>>     aggregation_mode="sliding"
-    >>>     disaggregation_mode="seasonal",
-    >>> )
-    ```
-
     """
 
     def __init__(  # noqa: D107

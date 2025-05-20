@@ -35,11 +35,3 @@ max-args = 8
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.pydoc-markdown.renderer]
-type = "markdown"
-code_lang = true
-code_headers = true
-descriptive_class_title = false
-add_method_class_prefix = true
-signature_in_header = false

@@ -1,0 +1,16 @@
+loaders:
+  - type: python
+    search_path: ["./src"]
+    modules:
+      - intermittent_forecast.croston
+      - intermittent_forecast.simple_exponential_smoothing
+      - intermittent_forecast.double_exponential_smoothing
+
+renderer:
+  type: markdown
+  code_lang: true
+  code_headers: true
+  descriptive_class_title: false
+  add_method_class_prefix: true
+  signature_in_header: false
+  render_toc: true

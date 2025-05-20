@@ -17,7 +17,7 @@ from intermittent_forecast.base_forecaster import (
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
-class FittedModelResult(NamedTuple):
+class _FittedModelResult(NamedTuple):
     """TypedDict for the results after fitting the model."""
 
     alpha: float
@@ -27,11 +27,48 @@ class FittedModelResult(NamedTuple):
 
 
 class SimpleExponentialSmoothing(BaseForecaster):
-    """Simple Exponential Smoothing."""
+    """A class for forecasting time series using Simple Exponential Smoothing.
+
+    Simple Exponential Smoothing (`SES`) is a time series forecasting method
+    for data that does not exhibit trend or seasonal patterns. It
+    applies a weighted average to past observations, where the weights decay
+    exponentially with time.
+
+    When fitting, the smoothing factor alpha can be specified manually or be
+    automatically optimised. If not provided, alpha is optimised by minimising
+    the error between the fitted and actual values of the time series. The
+    error minimization is based on a chosen `optimisation_metric`, which
+    defaults to the Mean Squared Error (`MSE`). Other available metrics include
+    Mean Absolute Error (`MAE`), Mean Absolute Rate (`MAR`), and Mean Squared
+    Rate (`MSR`).
+
+    Example:
+        >>> # Initialise an instance of SimpleExponentialSmoothing, fit a time
+        >>> # series and create a forecast.
+        >>> ts = [40, 28, 35, 41, 33, 21, 37, 20]
+        >>> ses = SimpleExponentialSmoothing().fit(ts=ts, alpha=0.3)
+        >>> ses.forecast(start=0, end=8)
+        array([40.       , 40.       , 36.4      , 35.98     , 37.486    ,
+               36.1402   , 31.59814  , 33.218698 , 29.2530886])
+
+        >>> # Smoothing parameters can instead be optimised with a chosen
+        >>> # error metric.
+        >>> ses = SimpleExponentialSmoothing()
+        >>> ses = ses.fit(ts=ts, optimisation_metric="MSR")
+        >>> ses.forecast(start=0, end=8)
+        array([40.        , 40.        , 36.1204974 , 35.75824969, 37.45286502,
+               36.0132899 , 31.15961513, 33.04776416, 28.82952791])
+
+        >>> # Access a dict of the fitted values, get smoothing parameter alpha.
+        >>> result = ses.get_fit_result()
+        >>> result["alpha"]
+        0.32329188326949737
+
+    """
 
     def __init__(self) -> None:  # noqa: D107
         super().__init__()
-        self._fitted_model_result: FittedModelResult | None = None
+        self._fitted_model_result: _FittedModelResult | None = None
 
     def fit(
         self,
@@ -88,7 +125,7 @@ class SimpleExponentialSmoothing(BaseForecaster):
             )
         )
 
-        self._fitted_model_result = FittedModelResult(
+        self._fitted_model_result = _FittedModelResult(
             alpha=alpha,
             ts_base=ts,
             ts_fitted=ts_fitted,
@@ -134,11 +171,11 @@ class SimpleExponentialSmoothing(BaseForecaster):
 
     def _get_fit_result_if_found(
         self,
-    ) -> FittedModelResult:
+    ) -> _FittedModelResult:
         """Private method for getting the results after fitting the model."""
         if not self._fitted_model_result or not isinstance(
             self._fitted_model_result,
-            FittedModelResult,
+            _FittedModelResult,
         ):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."

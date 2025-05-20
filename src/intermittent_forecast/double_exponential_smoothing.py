@@ -18,14 +18,14 @@ from intermittent_forecast.base_forecaster import (
 from intermittent_forecast.error_metrics import ErrorMetricRegistry
 
 
-class SmoothingType(Enum):
+class _SmoothingType(Enum):
     """Enum for smoothing modes."""
 
     ADD = "additive"
     MUL = "multiplicative"
 
 
-class FittedModelResult(NamedTuple):
+class _FittedModelResult(NamedTuple):
     """TypedDict for the results after fitting the model."""
 
     alpha: float
@@ -37,11 +37,56 @@ class FittedModelResult(NamedTuple):
 
 
 class DoubleExponentialSmoothing(BaseForecaster):
-    """Double Exponential Smoothing."""
+    """A class for forecasting time series using Double Exponential Smoothing.
+
+    Double Exponential Smoothing (`DES`), also known as Holt's linear method,
+    extends `Simple Exponential Smoothing` by incorporating a trend component.
+    It is suitable for time series that exhibit a linear trend but no
+    seasonality. The method applies exponential smoothing separately to the
+    level and the trend of the series.
+
+    This class provides a simple interface to fit the DES model to a time
+    series. The model uses two smoothing factors: `alpha` for the level
+    component and `beta` for the trend component. Both parameters can be
+    specified manually or optimised automatically. If not provided, they will
+    be selected by minimising the error between the fitted and actual time
+    series values. The `optimisation_metric` used for fitting defaults to
+    the Mean Squared Error (`MSE`), but can also be set to alternative metrics
+    such as Mean Absolute Error (`MAE`), Mean Absolute Rate (`MAR`), or Mean
+    Squared Rate (`MSR`).
+
+    Example:
+        >>> # Initialise an instance of DoubleExponentialSmoothing, fit a time
+        >>> # series and create a forecast.
+        >>> ts = [12, 14, 16, 16, 15, 20, 22, 26]
+        >>> des = DoubleExponentialSmoothing().fit(ts=ts, alpha=0.3, beta=0.1)
+        >>> des.forecast(start=0, end=8) # In-sample forecast
+        array([12.        , 14.        , 16.        , 18.        , 19.34      ,
+               19.8478    , 21.707826  , 23.61860942, 26.22759953])
+
+        >>> # Out of sample forecasts are constructed from the final level and
+        >>> # trend values.
+        >>> des.forecast(start=9, end=12)
+        array([28.12217247, 30.01674541, 31.91131834, 33.80589128])
+
+        >>> # Smoothing parameters can instead be optimised with a chosen
+        >>> # error metric.
+        >>> des = DoubleExponentialSmoothing()
+        >>> des = des.fit(ts=ts, optimisation_metric="MSR")
+        >>> des.forecast(start=0, end=8)
+        array([12.        , 14.        , 16.        , 18.        , 18.52701196,
+               17.19289471, 19.22500534, 22.26717482, 27.03666424])
+
+        >>> # Access a dict of the fitted values.
+        >>> result = des.get_fit_result()
+        >>> result["alpha"], result["beta"]
+        (0.36824701090945217, 1.0)
+
+    """
 
     def __init__(self) -> None:  # noqa: D107
         super().__init__()
-        self._fitted_model_result: FittedModelResult | None = None
+        self._fitted_model_result: _FittedModelResult | None = None
 
     def fit(
         self,
@@ -107,7 +152,7 @@ class DoubleExponentialSmoothing(BaseForecaster):
                 ts=ts,
             )
         )
-        self._fitted_model_result = FittedModelResult(
+        self._fitted_model_result = _FittedModelResult(
             alpha=alpha,
             beta=beta,
             ts_base=ts,
@@ -157,11 +202,11 @@ class DoubleExponentialSmoothing(BaseForecaster):
 
     def _get_fit_result_if_found(
         self,
-    ) -> FittedModelResult:
+    ) -> _FittedModelResult:
         """Private method for getting the results after fitting the model."""
         if not self._fitted_model_result or not isinstance(
             self._fitted_model_result,
-            FittedModelResult,
+            _FittedModelResult,
         ):
             err_msg = (
                 "Model has not been fitted yet. Call the `fit` method first."
