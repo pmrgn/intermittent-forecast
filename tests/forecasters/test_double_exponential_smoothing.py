@@ -6,9 +6,7 @@ import pytest
 from intermittent_forecast.core.error_metrics import (
     ErrorMetricRegistry,
 )
-from intermittent_forecast.double_exponential_smoothing import (
-    DoubleExponentialSmoothing,
-)
+from intermittent_forecast.forecasters import DoubleExponentialSmoothing
 from intermittent_forecast.forecasters._base_forecaster import TSArray
 
 

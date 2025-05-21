@@ -9,9 +9,9 @@ import pytest
 from intermittent_forecast.core.error_metrics import (
     ErrorMetricRegistry,
 )
+from intermittent_forecast.forecasters import TripleExponentialSmoothing
 from intermittent_forecast.forecasters._base_forecaster import TSArray
-from intermittent_forecast.triple_exponential_smoothing import (
-    TripleExponentialSmoothing,
+from intermittent_forecast.forecasters.triple_exponential_smoothing import (
     _SmoothingType,
 )
 
