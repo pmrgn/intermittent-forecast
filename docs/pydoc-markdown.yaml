@@ -5,8 +5,6 @@ loaders:
       - intermittent_forecast.aggregators
       - intermittent_forecast.forecasters
 
-
-
 renderer:
   type: markdown
   classdef_code_block: true
@@ -18,5 +16,5 @@ renderer:
   render_module_header: true
   render_toc: true
   toc_maxdepth: 1
-  filename: "docs/documentation.md"
+  filename: "docs/pydoc-markdown-doc-export.md"
 
