@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from intermittent_forecast.core.types import TSArray, TSInput
+if TYPE_CHECKING:
+    from intermittent_forecast.core.types import TSArray, TSInput
 
 T_BaseForecaster = TypeVar("T_BaseForecaster", bound="_BaseForecaster")
 

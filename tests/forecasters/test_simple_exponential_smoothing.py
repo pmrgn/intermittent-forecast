@@ -6,8 +6,8 @@ import pytest
 from intermittent_forecast.core.error_metrics import (
     ErrorMetricRegistry,
 )
+from intermittent_forecast.core.types import TSArray
 from intermittent_forecast.forecasters import SimpleExponentialSmoothing
-from intermittent_forecast.forecasters._base_forecaster import TSArray
 
 
 @pytest.fixture

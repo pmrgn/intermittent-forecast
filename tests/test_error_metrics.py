@@ -7,7 +7,7 @@ from intermittent_forecast.core.error_metrics import (
     ErrorMetricRegistry,
     ErrorMetrics,
 )
-from intermittent_forecast.forecasters._base_forecaster import TSArray
+from intermittent_forecast.core.types import TSArray
 
 
 # Sample arrays for testing
