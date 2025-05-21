@@ -1,12 +1,11 @@
 loaders:
   - type: python
     search_path: ["./src"]
-    modules:
-      - intermittent_forecast.adida
-      - intermittent_forecast.croston
-      - intermittent_forecast.simple_exponential_smoothing
-      - intermittent_forecast.double_exponential_smoothing
-      - intermittent_forecast.triple_exponential_smoothing
+    packages:
+      - intermittent_forecast.aggregators
+      - intermittent_forecast.forecasters
+
+
 
 renderer:
   type: markdown
@@ -14,9 +13,10 @@ renderer:
   code_lang: true
   code_headers: true
   descriptive_class_title: false
-  add_method_class_prefix: true
+  add_method_class_prefix: false
   signature_in_header: false
+  render_module_header: true
   render_toc: true
   toc_maxdepth: 1
-  filename: docs.md
+  filename: "docs/documentation.md"
 
