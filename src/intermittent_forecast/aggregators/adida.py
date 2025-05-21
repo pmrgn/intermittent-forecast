@@ -63,8 +63,8 @@ class ADIDA:
     performed to return it to the original time series.
 
     Args:
-        aggregation_period (int): Number of time periods to aggregate. E.g, a
-            period of 7 would be used to aggregate a daily time series into a
+        aggregation_period (int): Number of time periods to aggregate. E.g,
+            aperiod of 7 would be used to aggregate a daily time series into a
             weekly time series.
         aggregation_mode (str): The aggregation mode, either "sliding" or
             "block". A sliding window will aggregate the time series by moving
