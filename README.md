@@ -2,7 +2,9 @@
 
 This package contains tools for forecasting intermittent time series, such using Croston's method or one of its variants - SBA, SBJ, and TSB. In addition, the Aggregate-Disaggregate Intermittent Demand Approach can be used with the `ADIDA` class. This allows for the removal of intermittency within the data so that other forecasting models can be utilised - such as Simple, Double and Triple Exponential Smoothing.
 
-See the documentation for examples on using this package.
+Each of the forecasting models has the ability to optimise for parameters when using the `fit` method. Error metrics used for optimisation can be chosen, such as selecting between the MSE, MAE, MSR and Periods in Stock (PIS).
+
+See the documentation below for examples on using this package.
 
 ## Installation
 
