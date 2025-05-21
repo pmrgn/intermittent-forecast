@@ -49,6 +49,7 @@ class DoubleExponentialSmoothing(_BaseForecaster):
     Example:
         >>> # Initialise an instance of DoubleExponentialSmoothing, fit a time
         >>> # series and create a forecast.
+        >>> from intermittent_forecast.forecasters import DoubleExponentialSmoothing
         >>> ts = [12, 14, 16, 16, 15, 20, 22, 26]
         >>> des = DoubleExponentialSmoothing().fit(ts=ts, alpha=0.3, beta=0.1)
         >>> des.forecast(start=0, end=8) # In-sample forecast
@@ -73,7 +74,7 @@ class DoubleExponentialSmoothing(_BaseForecaster):
         >>> result["alpha"], result["beta"]
         (0.36824701090945217, 1.0)
 
-    """
+    """  # noqa: E501
 
     def __init__(self) -> None:  # noqa: D107
         super().__init__()

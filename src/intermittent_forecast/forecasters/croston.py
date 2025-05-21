@@ -4,18 +4,19 @@ from __future__ import annotations
 
 import itertools
 from enum import Enum
-from typing import Any, Callable, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
 from scipy import optimize
 
-from intermittent_forecast.core import error_metrics
-from intermittent_forecast.core import utils
+from intermittent_forecast.core import error_metrics, utils
 from intermittent_forecast.forecasters._base_forecaster import (
     _BaseForecaster,
 )
-from intermittent_forecast.core.types import TSArray, TSInput
+
+if TYPE_CHECKING:
+    from intermittent_forecast.core.types import TSArray, TSInput
 
 
 class _CrostonVariant(Enum):
@@ -69,6 +70,7 @@ class Croston(_BaseForecaster):
     Example:
         >>> # Initialise an instance of Croston, fit a time series and create
         >>> # a forecast.
+        >>> from intermittent_forecast.forecasters import Croston
         >>> ts = [0, 3, 0, 4, 0, 0, 0, 2, 0]
         >>> cro = Croston().fit(ts=ts, alpha=0.5, beta=0.2)
         >>> cro.forecast(start=0, end=10)

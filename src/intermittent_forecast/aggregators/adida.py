@@ -4,16 +4,18 @@ from __future__ import annotations
 
 from copy import deepcopy
 from enum import Enum
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import numpy as np
 
 from intermittent_forecast.core import utils
 from intermittent_forecast.forecasters._base_forecaster import (
-    _BaseForecaster,
     T_BaseForecaster,
+    _BaseForecaster,
 )
-from intermittent_forecast.core.types import TSArray, TSInput
+
+if TYPE_CHECKING:
+    from intermittent_forecast.core.types import TSArray, TSInput
 
 
 class _AggregationMode(Enum):
@@ -85,6 +87,7 @@ class ADIDA:
         ... ]
 
         >>> # Initialise ADIDA model.
+        >>> from intermittent_forecast.aggregators import ADIDA
         >>> adida = ADIDA(
         ...     aggregation_period=7,
         ...     aggregation_mode="block",
@@ -92,13 +95,13 @@ class ADIDA:
         ... )
 
         >>> # Import a forecasting model to use on the aggregated series.
-        >>> from intermittent_forecast import simple_exponential_smoothing
+        >>> from intermittent_forecast import forecasters
 
         >>> # Fit using ADIDA, passing in an instance of the forecasting model.
         >>> # Any valid keyword arguments used by the model can be passed in,
         >>> # e.g. alpha for SimpleExponentialSmoothing.
         >>> adida = adida.fit(
-        ...     model=simple_exponential_smoothing.SimpleExponentialSmoothing(),
+        ...     model=forecasters.SimpleExponentialSmoothing(),
         ...     ts=ts,
         ...     alpha=0.3,
         ... )

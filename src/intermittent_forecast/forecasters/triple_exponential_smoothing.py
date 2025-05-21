@@ -65,6 +65,7 @@ class TripleExponentialSmoothing(_BaseForecaster):
     Example:
         >>> # Initialise an instance of TripleExponentialSmoothing, fit a time
         >>> # series and create a forecast.
+        >>> from intermittent_forecast.forecasters import TripleExponentialSmoothing
         >>> ts = [5, 6, 8, 9,
         ...       6, 8, 7,10,
         ...       8, 8, 9,12]

@@ -46,6 +46,7 @@ class SimpleExponentialSmoothing(_BaseForecaster):
     Example:
         >>> # Initialise an instance of SimpleExponentialSmoothing, fit a time
         >>> # series and create a forecast.
+        >>> from intermittent_forecast.forecasters import TripleExponentialSmoothing
         >>> ts = [40, 28, 35, 41, 33, 21, 37, 20]
         >>> ses = SimpleExponentialSmoothing().fit(ts=ts, alpha=0.3)
         >>> ses.forecast(start=0, end=8)
