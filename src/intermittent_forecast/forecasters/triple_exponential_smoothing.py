@@ -9,13 +9,12 @@ import numpy as np
 import numpy.typing as npt
 from scipy import optimize
 
-from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import (
-    BaseForecaster,
-    TSArray,
-    TSInput,
+from intermittent_forecast.core import utils
+from intermittent_forecast.core.error_metrics import ErrorMetricRegistry
+from intermittent_forecast.forecasters._base_forecaster import (
+    _BaseForecaster,
 )
-from intermittent_forecast.error_metrics import ErrorMetricRegistry
+from intermittent_forecast.core.types import TSArray, TSInput
 
 
 class _SmoothingType(Enum):
@@ -41,7 +40,7 @@ class _FittedModelResult(NamedTuple):
     seasonal_final: TSArray
 
 
-class TripleExponentialSmoothing(BaseForecaster):
+class TripleExponentialSmoothing(_BaseForecaster):
     """A class for forecasting time series using Triple Exponential Smoothing.
 
     Triple Exponential Smoothing (`TES`), also referred to as Holt-Winters

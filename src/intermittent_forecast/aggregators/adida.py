@@ -8,13 +8,12 @@ from typing import Any, NamedTuple
 
 import numpy as np
 
-from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import (
-    BaseForecaster,
+from intermittent_forecast.core import utils
+from intermittent_forecast.forecasters._base_forecaster import (
+    _BaseForecaster,
     T_BaseForecaster,
-    TSArray,
-    TSInput,
 )
+from intermittent_forecast.core.types import TSArray, TSInput
 
 
 class _AggregationMode(Enum):
@@ -42,7 +41,7 @@ class _ADIDAConfig(NamedTuple):
 class _ADIDAFittedResult(NamedTuple):
     """Fitted result for ADIDA model."""
 
-    aggregated_model: BaseForecaster
+    aggregated_model: _BaseForecaster
     temporal_weights: TSArray
     ts_base: TSArray
 
@@ -164,7 +163,7 @@ class ADIDA:
             self (ADIDA): Fitted model instance.
 
         """
-        if not isinstance(model, BaseForecaster):
+        if not isinstance(model, _BaseForecaster):
             err_msg = (
                 "ADIDA model requires a forecasting model.",
                 f"Got: {type(model)}",

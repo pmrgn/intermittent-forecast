@@ -2,27 +2,18 @@
 
 from __future__ import annotations
 
-from enum import Enum
 from typing import Any, Callable, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
 from scipy import optimize
 
-from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import (
-    BaseForecaster,
-    TSArray,
-    TSInput,
+from intermittent_forecast.core import utils
+from intermittent_forecast.core.error_metrics import ErrorMetricRegistry
+from intermittent_forecast.core.types import TSArray, TSInput
+from intermittent_forecast.forecasters._base_forecaster import (
+    _BaseForecaster,
 )
-from intermittent_forecast.error_metrics import ErrorMetricRegistry
-
-
-class _SmoothingType(Enum):
-    """Enum for smoothing modes."""
-
-    ADD = "additive"
-    MUL = "multiplicative"
 
 
 class _FittedModelResult(NamedTuple):
@@ -36,7 +27,7 @@ class _FittedModelResult(NamedTuple):
     trend_final: float
 
 
-class DoubleExponentialSmoothing(BaseForecaster):
+class DoubleExponentialSmoothing(_BaseForecaster):
     """A class for forecasting time series using Double Exponential Smoothing.
 
     Double Exponential Smoothing (`DES`), also known as Holt's linear method,

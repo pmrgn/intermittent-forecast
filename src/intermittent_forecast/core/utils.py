@@ -8,7 +8,10 @@ from typing import TYPE_CHECKING, TypeVar
 import numpy as np
 
 if TYPE_CHECKING:
-    from intermittent_forecast.base_forecaster import TSArray, TSInput
+    from intermittent_forecast.forecasters._base_forecaster import (
+        TSArray,
+        TSInput,
+    )
 
 EnumMember = TypeVar("EnumMember", bound=Enum)
 

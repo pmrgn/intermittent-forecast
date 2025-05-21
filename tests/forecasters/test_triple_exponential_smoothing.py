@@ -6,10 +6,10 @@ from typing import Any
 import numpy as np
 import pytest
 
-from intermittent_forecast.base_forecaster import TSArray
-from intermittent_forecast.error_metrics import (
+from intermittent_forecast.core.error_metrics import (
     ErrorMetricRegistry,
 )
+from intermittent_forecast.forecasters._base_forecaster import TSArray
 from intermittent_forecast.triple_exponential_smoothing import (
     TripleExponentialSmoothing,
     _SmoothingType,

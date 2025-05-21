@@ -10,12 +10,12 @@ import numpy as np
 import numpy.typing as npt
 from scipy import optimize
 
-from intermittent_forecast import error_metrics, utils
-from intermittent_forecast.base_forecaster import (
-    BaseForecaster,
-    TSArray,
-    TSInput,
+from intermittent_forecast.core import error_metrics
+from intermittent_forecast.core import utils
+from intermittent_forecast.forecasters._base_forecaster import (
+    _BaseForecaster,
 )
+from intermittent_forecast.core.types import TSArray, TSInput
 
 
 class _CrostonVariant(Enum):
@@ -46,7 +46,7 @@ class _FittedModelResult(NamedTuple):
     ts_fitted: TSArray
 
 
-class Croston(BaseForecaster):
+class Croston(_BaseForecaster):
     """A class for fitting and forecasting intermittent time series.
 
     Croston's method deconstructs a time series into separate demand and

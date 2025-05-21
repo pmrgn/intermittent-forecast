@@ -3,11 +3,11 @@
 import numpy as np
 import pytest
 
-from intermittent_forecast.base_forecaster import TSArray
-from intermittent_forecast.error_metrics import (
+from intermittent_forecast.core.error_metrics import (
     ErrorMetricRegistry,
     ErrorMetrics,
 )
+from intermittent_forecast.forecasters._base_forecaster import TSArray
 
 
 # Sample arrays for testing

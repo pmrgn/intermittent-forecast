@@ -6,11 +6,12 @@ from typing import Any
 import numpy as np
 import pytest
 
-from intermittent_forecast.base_forecaster import TSArray
-from intermittent_forecast.croston import Croston, _CrostonVariant
-from intermittent_forecast.error_metrics import (
+from intermittent_forecast.core.error_metrics import (
     ErrorMetricRegistry,
 )
+from intermittent_forecast.forecasters import Croston
+from intermittent_forecast.forecasters._base_forecaster import TSArray
+from intermittent_forecast.forecasters.croston import _CrostonVariant
 
 
 @pytest.fixture
@@ -94,7 +95,7 @@ class TestCROFit:
         ):
             Croston().fit(
                 ts=basic_time_series,
-                optimisation_metric=invalid_metric,  # type: ignore[arg-type]
+                optimisation_metric=invalid_metric,
             )
 
     def test_alpha_can_be_set_with_beta_optimised(
