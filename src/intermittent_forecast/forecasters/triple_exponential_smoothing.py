@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Callable, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
@@ -14,7 +14,9 @@ from intermittent_forecast.core.error_metrics import ErrorMetricRegistry
 from intermittent_forecast.forecasters._base_forecaster import (
     _BaseForecaster,
 )
-from intermittent_forecast.core.types import TSArray, TSInput
+
+if TYPE_CHECKING:
+    from intermittent_forecast.core._types import TSArray, TSInput
 
 
 class _SmoothingType(Enum):
@@ -107,7 +109,7 @@ class TripleExponentialSmoothing(_BaseForecaster):
         >>> result["alpha"], result["beta"], result["gamma"]
         (0.08364575434612503, 1.0, 0.47060129090469816)
 
-    """
+    """  # noqa: E501
 
     def __init__(self) -> None:  # noqa: D107
         super().__init__()

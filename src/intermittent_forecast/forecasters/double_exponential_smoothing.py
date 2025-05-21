@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
@@ -10,10 +10,12 @@ from scipy import optimize
 
 from intermittent_forecast.core import utils
 from intermittent_forecast.core.error_metrics import ErrorMetricRegistry
-from intermittent_forecast.core.types import TSArray, TSInput
 from intermittent_forecast.forecasters._base_forecaster import (
     _BaseForecaster,
 )
+
+if TYPE_CHECKING:
+    from intermittent_forecast.core._types import TSArray, TSInput
 
 
 class _FittedModelResult(NamedTuple):

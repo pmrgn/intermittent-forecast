@@ -15,7 +15,7 @@ from intermittent_forecast.forecasters._base_forecaster import (
 )
 
 if TYPE_CHECKING:
-    from intermittent_forecast.core.types import TSArray, TSInput
+    from intermittent_forecast.core._types import TSArray, TSInput
 
 
 class _FittedModelResult(NamedTuple):
@@ -46,7 +46,7 @@ class SimpleExponentialSmoothing(_BaseForecaster):
     Example:
         >>> # Initialise an instance of SimpleExponentialSmoothing, fit a time
         >>> # series and create a forecast.
-        >>> from intermittent_forecast.forecasters import TripleExponentialSmoothing
+        >>> from intermittent_forecast.forecasters import SimpleExponentialSmoothing
         >>> ts = [40, 28, 35, 41, 33, 21, 37, 20]
         >>> ses = SimpleExponentialSmoothing().fit(ts=ts, alpha=0.3)
         >>> ses.forecast(start=0, end=8)
@@ -66,7 +66,7 @@ class SimpleExponentialSmoothing(_BaseForecaster):
         >>> result["alpha"]
         0.32329188326949737
 
-    """
+    """  # noqa: E501
 
     def __init__(self) -> None:  # noqa: D107
         super().__init__()

@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, TypeVar
 
 if TYPE_CHECKING:
-    from intermittent_forecast.core.types import TSArray, TSInput
+    from intermittent_forecast.core._types import TSArray, TSInput
 
 T_BaseForecaster = TypeVar("T_BaseForecaster", bound="_BaseForecaster")
 

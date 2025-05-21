@@ -16,7 +16,7 @@ from intermittent_forecast.forecasters._base_forecaster import (
 )
 
 if TYPE_CHECKING:
-    from intermittent_forecast.core.types import TSArray, TSInput
+    from intermittent_forecast.core._types import TSArray, TSInput
 
 
 class _CrostonVariant(Enum):

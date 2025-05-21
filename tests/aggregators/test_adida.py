@@ -5,7 +5,7 @@ import numpy.typing as npt
 import pytest
 
 from intermittent_forecast.aggregators.adida import ADIDA
-from intermittent_forecast.core.types import TSArray
+from intermittent_forecast.core._types import TSArray
 from intermittent_forecast.forecasters import (
     Croston,
     TripleExponentialSmoothing,

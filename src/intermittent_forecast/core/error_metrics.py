@@ -5,7 +5,7 @@ from typing import Callable, ClassVar
 import numpy as np
 
 from intermittent_forecast.core import utils
-from intermittent_forecast.core.types import TSArray
+from intermittent_forecast.core._types import TSArray
 
 ErrorMetricFunc = Callable[
     [TSArray, TSArray],
