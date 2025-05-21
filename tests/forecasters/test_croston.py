@@ -6,11 +6,12 @@ from typing import Any
 import numpy as np
 import pytest
 
-from intermittent_forecast.base_forecaster import TSArray
-from intermittent_forecast.croston import Croston, _CrostonVariant
-from intermittent_forecast.error_metrics import (
+from intermittent_forecast.core._types import TSArray
+from intermittent_forecast.core.error_metrics import (
     ErrorMetricRegistry,
 )
+from intermittent_forecast.forecasters import Croston
+from intermittent_forecast.forecasters.croston import _CrostonVariant
 
 
 @pytest.fixture

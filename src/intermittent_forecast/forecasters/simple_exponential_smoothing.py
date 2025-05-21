@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
 from scipy import optimize
 
-from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import (
-    BaseForecaster,
-    TSArray,
-    TSInput,
+from intermittent_forecast.core import utils
+from intermittent_forecast.core.error_metrics import ErrorMetricRegistry
+from intermittent_forecast.forecasters._base_forecaster import (
+    _BaseForecaster,
 )
-from intermittent_forecast.error_metrics import ErrorMetricRegistry
+
+if TYPE_CHECKING:
+    from intermittent_forecast.core._types import TSArray, TSInput
 
 
 class _FittedModelResult(NamedTuple):
@@ -26,7 +27,7 @@ class _FittedModelResult(NamedTuple):
     lvl_final: float
 
 
-class SimpleExponentialSmoothing(BaseForecaster):
+class SimpleExponentialSmoothing(_BaseForecaster):
     """A class for forecasting time series using Simple Exponential Smoothing.
 
     Simple Exponential Smoothing (`SES`) is a time series forecasting method
@@ -45,6 +46,7 @@ class SimpleExponentialSmoothing(BaseForecaster):
     Example:
         >>> # Initialise an instance of SimpleExponentialSmoothing, fit a time
         >>> # series and create a forecast.
+        >>> from intermittent_forecast.forecasters import SimpleExponentialSmoothing
         >>> ts = [40, 28, 35, 41, 33, 21, 37, 20]
         >>> ses = SimpleExponentialSmoothing().fit(ts=ts, alpha=0.3)
         >>> ses.forecast(start=0, end=8)
@@ -64,7 +66,7 @@ class SimpleExponentialSmoothing(BaseForecaster):
         >>> result["alpha"]
         0.32329188326949737
 
-    """
+    """  # noqa: E501
 
     def __init__(self) -> None:  # noqa: D107
         super().__init__()

@@ -3,19 +3,20 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Callable, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
 from scipy import optimize
 
-from intermittent_forecast import utils
-from intermittent_forecast.base_forecaster import (
-    BaseForecaster,
-    TSArray,
-    TSInput,
+from intermittent_forecast.core import utils
+from intermittent_forecast.core.error_metrics import ErrorMetricRegistry
+from intermittent_forecast.forecasters._base_forecaster import (
+    _BaseForecaster,
 )
-from intermittent_forecast.error_metrics import ErrorMetricRegistry
+
+if TYPE_CHECKING:
+    from intermittent_forecast.core._types import TSArray, TSInput
 
 
 class _SmoothingType(Enum):
@@ -41,7 +42,7 @@ class _FittedModelResult(NamedTuple):
     seasonal_final: TSArray
 
 
-class TripleExponentialSmoothing(BaseForecaster):
+class TripleExponentialSmoothing(_BaseForecaster):
     """A class for forecasting time series using Triple Exponential Smoothing.
 
     Triple Exponential Smoothing (`TES`), also referred to as Holt-Winters
@@ -66,6 +67,7 @@ class TripleExponentialSmoothing(BaseForecaster):
     Example:
         >>> # Initialise an instance of TripleExponentialSmoothing, fit a time
         >>> # series and create a forecast.
+        >>> from intermittent_forecast.forecasters import TripleExponentialSmoothing
         >>> ts = [5, 6, 8, 9,
         ...       6, 8, 7,10,
         ...       8, 8, 9,12]
@@ -107,7 +109,7 @@ class TripleExponentialSmoothing(BaseForecaster):
         >>> result["alpha"], result["beta"], result["gamma"]
         (0.08364575434612503, 1.0, 0.47060129090469816)
 
-    """
+    """  # noqa: E501
 
     def __init__(self) -> None:  # noqa: D107
         super().__init__()

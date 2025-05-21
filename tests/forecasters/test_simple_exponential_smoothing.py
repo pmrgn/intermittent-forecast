@@ -1,15 +1,13 @@
-"""Tests for Double Exponential Smoothing."""
+"""Tests for Simple Exponential Smoothing."""
 
 import numpy as np
 import pytest
 
-from intermittent_forecast.base_forecaster import TSArray
-from intermittent_forecast.double_exponential_smoothing import (
-    DoubleExponentialSmoothing,
-)
-from intermittent_forecast.error_metrics import (
+from intermittent_forecast.core._types import TSArray
+from intermittent_forecast.core.error_metrics import (
     ErrorMetricRegistry,
 )
+from intermittent_forecast.forecasters import SimpleExponentialSmoothing
 
 
 @pytest.fixture
@@ -22,32 +20,30 @@ def ts_random() -> TSArray:
     return np.array([40, 28, 35, 41, 33, 21, 37, 20, 28, 31, 31, 22])
 
 
-class TestDoubleExponentialSmoothingForecast:
-    def test_returns_correct_values_with_alpha_and_beta_set(
+class TestSimpleExponentialSmoothingFit:
+    def test_alpha_optimises_to_correct_value(
         self,
-        ts_random: TSArray,
+        ts_linear: TSArray,
     ) -> None:
-        n_obs = len(ts_random)
-        model = DoubleExponentialSmoothing().fit(
-            ts=ts_random,
-            alpha=0.3,
-            beta=0.1,
+        ses = SimpleExponentialSmoothing().fit(ts=ts_linear)
+        alpha_optimised = ses.get_fit_result()["alpha"]
+        if alpha_optimised != 1:
+            err_msg = f"Expected alpha to be 1. Got: {alpha_optimised}"
+            raise ValueError(err_msg)
+
+
+class TestSimpleExponentialSmoothingForecast:
+    def test_returns_correct_values_with_alpha_set_to_one(
+        self,
+        ts_linear: TSArray,
+    ) -> None:
+        n_obs = len(ts_linear)
+        model = SimpleExponentialSmoothing().fit(
+            ts=ts_linear,
+            alpha=1,
         )
         forecast_insample = model.forecast(start=0, end=n_obs - 1)
-        expected_insample = [
-            40.0,
-            28.0,
-            16.0,
-            10.27,
-            8.9809,
-            6.399103,
-            1.429872,
-            3.818514,
-            0.876008,
-            2.029973,
-            4.606850,
-            7.202458,
-        ]
+        expected_insample = [1, 1, 2, 3, 4, 5]
         np.testing.assert_allclose(
             forecast_insample,
             expected_insample,
@@ -55,13 +51,46 @@ class TestDoubleExponentialSmoothingForecast:
         )
 
         forecast_outsample = model.forecast(start=n_obs, end=n_obs + 4)
-        expected_outsample = [
-            6.763310,
-            1.884900,
-            -2.993510,
-            -7.871920,
-            -12.7503309,
+        expected_outsample = [6, 6, 6, 6, 6]
+
+        np.testing.assert_allclose(
+            forecast_outsample,
+            expected_outsample,
+            rtol=1e-5,
+        )
+
+    def test_returns_correct_values_with_alpha_set_to_float(
+        self,
+        ts_random: TSArray,
+    ) -> None:
+        n_obs = len(ts_random)
+        model = SimpleExponentialSmoothing().fit(
+            ts=ts_random,
+            alpha=0.3,
+        )
+        forecast_insample = model.forecast(start=0, end=n_obs - 1)
+        expected_insample = [
+            40.0,
+            40.0,
+            36.4,
+            35.98,
+            37.486,
+            36.1402,
+            31.59814,
+            33.218698,
+            29.2530886,
+            28.8771620,
+            29.5140134,
+            29.9598093,
         ]
+        np.testing.assert_allclose(
+            forecast_insample,
+            expected_insample,
+            rtol=1e-5,
+        )
+
+        forecast_outsample = model.forecast(start=n_obs, end=n_obs + 2)
+        expected_outsample = [27.571866, 27.571866, 27.571866]
 
         np.testing.assert_allclose(
             forecast_outsample,
@@ -75,10 +104,10 @@ class TestDoubleExponentialSmoothingForecast:
             RuntimeError,
             match="Model has not been fitted yet",
         ):
-            DoubleExponentialSmoothing().forecast(start=0, end=1)
+            SimpleExponentialSmoothing().forecast(start=0, end=1)
 
 
-class TestDoubleExponentialSmoothingOptimisedForecast:
+class TestSimpleExponentialSmoothingOptimisedForecast:
     @pytest.mark.parametrize(
         "error_metric",
         ErrorMetricRegistry.get_registry().keys(),
@@ -97,13 +126,13 @@ class TestDoubleExponentialSmoothingOptimisedForecast:
         ts = ts_random
         len_ts = len(ts)
         forecast_estimated = (
-            DoubleExponentialSmoothing()
-            .fit(ts=ts, alpha=0.3, beta=0.1)
+            SimpleExponentialSmoothing()
+            .fit(ts=ts, alpha=0.3)
             .forecast(start=0, end=(len_ts - 1))
         )
 
         forecast_optimised = (
-            DoubleExponentialSmoothing()
+            SimpleExponentialSmoothing()
             .fit(
                 ts=ts,
                 optimisation_metric=error_metric,

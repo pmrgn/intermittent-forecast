@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
-import numpy as np
-import numpy.typing as npt
+if TYPE_CHECKING:
+    from intermittent_forecast.core._types import TSArray, TSInput
 
-T_BaseForecaster = TypeVar("T_BaseForecaster", bound="BaseForecaster")
-TSArray = npt.NDArray[np.float64]
-TSInput = npt.ArrayLike
+T_BaseForecaster = TypeVar("T_BaseForecaster", bound="_BaseForecaster")
 
 
-class BaseForecaster(ABC):
+class _BaseForecaster(ABC):
     """Abstract base class for forecasting models.
 
     Subclasses must implement the following methods:
