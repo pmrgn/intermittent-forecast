@@ -122,7 +122,7 @@ performed to return it to the original time series.
 def fit(
   model: forecaster,
   ts: ArrayLike, 
-  **kwargs: Any
+  **kwargs: Any,
 ) -> ADIDA
 ```
 
@@ -131,7 +131,7 @@ Aggregate the time series and fit using the forecasting model.
 **Arguments**:
 
 - `model` _forecaster_ - Forecasting model to use on the
-  aggregated time series, which can be any of the BaseForecaster
+  aggregated time series, which can be any of the forecaster
   class instances, e.g. Croston, SimpleExponentialSmoothing.
 - `ts` _ArrayLike_ - Time series to fit.
 - `**kwargs` _Any_ - Additional keyword arguments to pass to the
@@ -149,7 +149,7 @@ Aggregate the time series and fit using the forecasting model.
 #### `forecast`
 
 ```python
-def forecast(start: int, end: int) -> TSArray
+def forecast(start: int, end: int) -> np.ndarray
 ```
 
 Forecast the time series using the ADIDA method.
@@ -238,7 +238,7 @@ def fit(
   variant: str = "CRO",
   alpha: float | None = None,
   beta: float | None = None,
-  optimisation_metric: str = "MSE"
+  optimisation_metric: str = "MSE",
 ) -> Croston
 ```
 
@@ -274,7 +274,7 @@ Fit the model to the time-series.
 #### `forecast`
 
 ```python
-def forecast(start: int, end: int) -> TSArray
+def forecast(start: int, end: int) -> np.ndarray
 ```
 
 Forecast the time series using the fitted parameters.
@@ -357,9 +357,11 @@ Rate (`MSR`).
 #### `fit`
 
 ```python
-def fit(ts: ArrayLike,
-        alpha: float | None = None,
-        optimisation_metric: str | None = None) -> SimpleExponentialSmoothing
+def fit(
+  ts: ArrayLike,
+  alpha: float | None = None,
+  optimisation_metric: str | None = None,
+) -> SimpleExponentialSmoothing
 ```
 
 Fit the model to the time-series.
@@ -390,7 +392,7 @@ Fit the model to the time-series.
 #### `forecast`
 
 ```python
-def forecast(start: int, end: int) -> TSArray
+def forecast(start: int, end: int) -> np.ndarray
 ```
 
 Forecast the time series using the fitted parameters.
@@ -475,10 +477,12 @@ Squared Rate (`MSR`).
 #### `fit`
 
 ```python
-def fit(ts: ArrayLike,
-        alpha: float | None = None,
-        beta: float | None = None,
-        optimisation_metric: str | None = None) -> DoubleExponentialSmoothing
+def fit(
+  ts: ArrayLike,
+  alpha: float | None = None,
+  beta: float | None = None,
+  optimisation_metric: str | None = None,
+) -> DoubleExponentialSmoothing
 ```
 
 Fit the model to the time-series.
@@ -511,7 +515,7 @@ Fit the model to the time-series.
 #### `forecast`
 
 ```python
-def forecast(start: int, end: int) -> TSArray
+def forecast(start: int, end: int) -> np.ndarray
 ```
 
 Forecast the time series using the fitted parameters.
@@ -618,14 +622,16 @@ Mean Squared Rate (`MSR`), among others.
 #### `fit`
 
 ```python
-def fit(ts: ArrayLike,
-        period: int,
-        trend_type: str = "additive",
-        seasonal_type: str = "additive",
-        alpha: float | None = None,
-        beta: float | None = None,
-        gamma: float | None = None,
-        optimisation_metric: str | None = None) -> TripleExponentialSmoothing
+def fit(
+  ts: ArrayLike,
+  period: int,
+  trend_type: str = "additive",
+  seasonal_type: str = "additive",
+  alpha: float | None = None,
+  beta: float | None = None,
+  gamma: float | None = None,
+  optimisation_metric: str | None = None,
+) -> TripleExponentialSmoothing
 ```
 
 Fit the model to the time-series.
@@ -670,7 +676,7 @@ Fit the model to the time-series.
 #### `forecast`
 
 ```python
-def forecast(start: int, end: int) -> TSArray
+def forecast(start: int, end: int) -> np.ndarray
 ```
 
 Forecast the time series using the fitted parameters.
