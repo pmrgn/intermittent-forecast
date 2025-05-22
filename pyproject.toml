@@ -1,6 +1,6 @@
 [project]
 name = "intermittent-forecast"
-version = "1.0.0"
+version = "0.0.2-dev"
 description = "Tools for forecasting intermittent time series"
 authors = [
     {name="Paul Morgan"}
