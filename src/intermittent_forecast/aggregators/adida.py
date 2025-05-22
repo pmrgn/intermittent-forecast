@@ -1,4 +1,4 @@
-"""Methods for forecasting intermittent time series using ADIDA method."""
+"""The Aggregate-Disaggregate Intermittent Demand Approach (ADIDA)."""
 
 from __future__ import annotations
 

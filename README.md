@@ -42,7 +42,11 @@ Alternatively, you can clone the repo
 ## `ADIDA`
 
 ```python
-class ADIDA()
+class ADIDA(
+  aggregation_period: int,
+  aggregation_mode: str,
+  disaggregation_mode: str,
+)
 ```
 
 Aggregate-Disaggregate Intermittent Demand Approach (ADIDA).
@@ -115,14 +119,18 @@ performed to return it to the original time series.
 #### `fit`
 
 ```python
-def fit(model: T_BaseForecaster, ts: TSInput, **kwargs: Any) -> ADIDA
+def fit(
+  model: forecaster,
+  ts: ArrayLike, 
+  **kwargs: Any
+) -> ADIDA
 ```
 
 Aggregate the time series and fit using the forecasting model.
 
 **Arguments**:
 
-- `model` _T_BaseForecaster_ - Forecasting model to use on the
+- `model` _forecaster_ - Forecasting model to use on the
   aggregated time series, which can be any of the BaseForecaster
   class instances, e.g. Croston, SimpleExponentialSmoothing.
 - `ts` _ArrayLike_ - Time series to fit.
@@ -175,7 +183,7 @@ Return the a dictionary of results if model has been fit.
 ## `Croston`
 
 ```python
-class Croston(_BaseForecaster)
+class Croston()
 ```
 
 A class for fitting and forecasting intermittent time series.
@@ -225,11 +233,13 @@ Rate (`MSR`), or Periods in Stock (`PIS`).
 #### `fit`
 
 ```python
-def fit(ts: TSInput,
-        variant: str = "CRO",
-        alpha: float | None = None,
-        beta: float | None = None,
-        optimisation_metric: str = "MSE") -> Croston
+def fit(
+  ts: ArrayLike,
+  variant: str = "CRO",
+  alpha: float | None = None,
+  beta: float | None = None,
+  optimisation_metric: str = "MSE"
+) -> Croston
 ```
 
 Fit the model to the time-series.
@@ -300,7 +310,7 @@ Return a dictionary of results if model has been fit.
 ## `SimpleExponentialSmoothing`
 
 ```python
-class SimpleExponentialSmoothing(_BaseForecaster)
+class SimpleExponentialSmoothing()
 ```
 
 A class for forecasting time series using Simple Exponential Smoothing.
@@ -347,7 +357,7 @@ Rate (`MSR`).
 #### `fit`
 
 ```python
-def fit(ts: TSInput,
+def fit(ts: ArrayLike,
         alpha: float | None = None,
         optimisation_metric: str | None = None) -> SimpleExponentialSmoothing
 ```
@@ -410,7 +420,7 @@ Return the a dictionary of results if model has been fit.
 ## `DoubleExponentialSmoothing`
 
 ```python
-class DoubleExponentialSmoothing(_BaseForecaster)
+class DoubleExponentialSmoothing()
 ```
 
 A class for forecasting time series using Double Exponential Smoothing.
@@ -465,7 +475,7 @@ Squared Rate (`MSR`).
 #### `fit`
 
 ```python
-def fit(ts: TSInput,
+def fit(ts: ArrayLike,
         alpha: float | None = None,
         beta: float | None = None,
         optimisation_metric: str | None = None) -> DoubleExponentialSmoothing
@@ -533,7 +543,7 @@ Return the a dictionary of results if model has been fit.
 ## `TripleExponentialSmoothing`
 
 ```python
-class TripleExponentialSmoothing(_BaseForecaster)
+class TripleExponentialSmoothing()
 ```
 
 A class for forecasting time series using Triple Exponential Smoothing.
@@ -608,7 +618,7 @@ Mean Squared Rate (`MSR`), among others.
 #### `fit`
 
 ```python
-def fit(ts: TSInput,
+def fit(ts: ArrayLike,
         period: int,
         trend_type: str = "additive",
         seasonal_type: str = "additive",
